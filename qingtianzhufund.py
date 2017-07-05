@@ -149,7 +149,7 @@ def sendmail(filename = 'c:/1.xlsx', receiver = ['iyangpingyan@icloud.com'], ccr
         smtp.login(username, password)    
         smtp.sendmail(sender, receiver + ccreceiver, msg.as_string())    
         smtp.quit()  
-        print("sent email success")
+        
     except Exception as e:
         print(str(e))
                 
@@ -194,8 +194,8 @@ if __name__ == '__main__':
     print(subject)
     
     if assets and (retexcel is 0):
-#        sendmail(filename = filename,receiver = ['joeyyh@126.com'], ccreceiver = ['iyangpingyan@icloud.com'], subject=subject)
-        sendmail(filename = filename, ccreceiver = ['iyangpingyan@icloud.com'], subject=subject)
+        sendmail(filename = filename,receiver = ['joeyyh@126.com'], ccreceiver = ['iyangpingyan@icloud.com'], subject=subject)
+        print("sent email success")
         pass
     else:
         print("no email sent")
