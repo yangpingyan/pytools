@@ -56,7 +56,7 @@ def rmbupper(value):
         words.append(u"整")
     return ''.join(words)
 
-xlsxfilename = '20170623浙商般若西湖63号私募投资基金客户信息表.xlsx'
+xlsxfilename = '20170710东方般若西湖2号私募投资基金客户信息表.xlsx'
 wb = load_workbook(filename = xlsxfilename)
 ws = wb.active
 productname = ws.cell(row=1, column=1).value
@@ -76,7 +76,7 @@ for username in names :
     print(df)
     money = df['金额'].sum()
     moneywan = money*10000
-    moneystr = '{:,.2f}'.format(moneywan)
+    moneystr = '{:.2f}'.format(moneywan)
     
     document = Document()
     style = document.styles['Normal']
