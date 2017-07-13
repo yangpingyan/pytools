@@ -44,7 +44,7 @@ conn = MySQLdb.connect(host='127.0.0.1',              #此处必须是是127.0.0
                        db=rdsdb)  
 cursor = conn.cursor()
 
-sql = """SELECT p.name, p.type, p.status, d.buying_money, d.buying_rate, 
+sql = """SELECT p.name, p.type, p.status as product_status, d.buying_money, d.buying_rate, 
     d.buying_limit_num_show, d.buying_type, d.status
     FROM fy_product_detail d 
     LEFT JOIN fy_product p ON p.`id` = d.`product_id` 
