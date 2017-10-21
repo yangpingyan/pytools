@@ -4,3 +4,4 @@ emailpanna.json
 *.json
 *.pyc
 .DS_Store
+*.ini

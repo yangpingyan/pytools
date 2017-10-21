@@ -12,7 +12,7 @@ from PIL import Image
 # Open Images and load it using Image Module
 images_list = ['1.png', '2.png', '3.png']
 imgs = [ Image.open(i) for i in images_list ]
-
+print(imgs)
 # Find the smallest image, and resize the other images to match it
 min_img_shape = sorted( [(np.sum(i.size), i.size ) for i in imgs])[0][1]
 
