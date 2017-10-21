@@ -56,7 +56,7 @@ def rmbupper(value):
         words.append(u"整")
     return ''.join(words)
 
-xlsxfilename = '20170710东方般若西湖2号私募投资基金客户信息表.xlsx'
+xlsxfilename = '20170720东方般若西湖1号私募投资基金客户信息表.xlsx'
 wb = load_workbook(filename = xlsxfilename)
 ws = wb.active
 productname = ws.cell(row=1, column=1).value

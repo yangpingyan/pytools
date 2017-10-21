@@ -172,8 +172,8 @@ def parse_args(pargs=None):
     
 if __name__ == '__main__':
     print("MISSION START")
-    fundunit = 296177.57
-    filename = './擎天柱基金资产净值明细表.xlsx'   
+    fundunit = 248450.07
+    filename = './擎天柱基金资产净值明细表1.xlsx'   
     pwfile = './emailpanna.json'     
 
     args = None
