@@ -1,14 +1,9 @@
 
 parse
-pyparsing
-pytest
-python-dateutil
 tushare
 python-docx (python3ÖÐ´úÌædocx£©
 xlrd
 openpyxl
-email
-pandas
-matplotlib
-numpy
 easyutils
+PIL
+pypdf2
