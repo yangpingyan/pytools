@@ -20,7 +20,8 @@ except:
 #    user = easytrader.use('ths')
 #    user.connect(r'C:\ths\xiadan.exe') # 类似 r'C:\htzqzyb2\xiadan.exe'
     user = easytrader.use('gj_client')
-    user.prepare(user='39027298', password='616506', comm_password='920103')
+    user.prepare('gj_client.json')
+
 
 
 
@@ -29,11 +30,12 @@ except:
 df = ts.get_realtime_quotes('002413')
 buy_price = float(df['ask'][0])
 print(buy_price)
+#print(user.balance)
 
-#print(user.today_trades)
-entrust_no = user.buy('002413', price=buy_price, amount=3000)
-
-print(entrust_no)
+print(user.position)
+#entrust_no = user.buy('002413', price=8.74, amount=3000)
+#
+#print(entrust_no)
 
 
 
