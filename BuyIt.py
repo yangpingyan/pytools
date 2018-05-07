@@ -27,16 +27,15 @@ except:
 
 
 df = ts.get_realtime_quotes('002413')
-buy_price = float(df['ask'][0])+0.01
+buy_price = float(df['ask'][0])
 print(buy_price)
 
 #print(user.today_trades)
-#entrust_no = user.buy('002413', price=buy_price, amount=3000)
+entrust_no = user.buy('002413', price=buy_price, amount=3000)
 
-#print(entrust_no)
+print(entrust_no)
 
-ret = user.cancel_entrust(entrust_no = '1766')
-print(ret)
+
 
 
 #user2 = easytrader.use('ths')
