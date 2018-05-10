@@ -1,7 +1,6 @@
-
 parse
 tushare
-python-docx (python3ÖÐ´úÌædocx£©
+python-docx
 xlrd
 openpyxl
 easyutils
