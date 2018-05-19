@@ -42,7 +42,6 @@ if __name__ == '__main__':
 
     all_df = pd.DataFrame()
     for excelfile in files:
-
         df_file = pd.read_excel(excelfile, sheet_name='交易记录', header=0)
         df_file = df_file.dropna(how='all')
         if(df_file.empty):
@@ -71,7 +70,7 @@ if __name__ == '__main__':
     print("总持股合计={:,.0f}".format(buy_amount-sell_amount))
 
     #按日期取得交易数据
-    date_str = '20180507'
+    date_str = '20180509'
     date_df = all_df[all_df['成交日期'].str.contains(date_str)]
     buy_df = date_df[date_df['操作'].str.contains('买入') ]
     buy_amount = buy_df['成交数量'].sum()
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     sell_amount = sell_df['成交数量'].sum()
     print("{}买入股数合计={:,.0f}".format(date_str,buy_amount))
     print("{}卖出股数合计={:,.0f}".format(date_str,sell_amount))
-    print("{}持股合计={:,.0f}".format(date_str,(buy_amount - sell_amount)))
+    print("{}持股合计={:,.0f}".format(date_str,buy_amount-sell_amount))
 #    print(date_df)
 
     print("mission complete")
