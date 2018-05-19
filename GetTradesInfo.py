@@ -43,18 +43,24 @@ if __name__ == '__main__':
     all_df = pd.DataFrame()
     for excelfile in files:
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of a03d006... done
         df_file = pd.read_excel(excelfile, sheet_name='交易记录', header=0)
         df_file = df_file.dropna(how='all')
         if(df_file.empty):
             continue
 
+<<<<<<< HEAD
 =======
         df_file = pd.read_excel(excelfile, sheet_name='交易记录', header=0)
         df_file = df_file.dropna(how='all')
         if(df_file.empty):
             continue
 
+>>>>>>> parent of a03d006... done
+=======
 >>>>>>> parent of a03d006... done
         df_file.rename(columns={'委托类别':'操作', '买入标志':'操作', \
                                 '买卖标志':'操作', '成交均价':'成交价格', \
@@ -80,7 +86,11 @@ if __name__ == '__main__':
 
     #按日期取得交易数据
 <<<<<<< HEAD
+<<<<<<< HEAD
     date_str = '20180507'
+=======
+    date_str = '20180509'
+>>>>>>> parent of a03d006... done
 =======
     date_str = '20180509'
 >>>>>>> parent of a03d006... done
@@ -92,7 +102,11 @@ if __name__ == '__main__':
     print("{}买入股数合计={:,.0f}".format(date_str,buy_amount))
     print("{}卖出股数合计={:,.0f}".format(date_str,sell_amount))
 <<<<<<< HEAD
+<<<<<<< HEAD
     print("{}持股合计={:,.0f}".format(date_str,(buy_amount - sell_amount)))
+=======
+    print("{}持股合计={:,.0f}".format(date_str,buy_amount-sell_amount))
+>>>>>>> parent of a03d006... done
 =======
     print("{}持股合计={:,.0f}".format(date_str,buy_amount-sell_amount))
 >>>>>>> parent of a03d006... done
