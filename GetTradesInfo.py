@@ -42,12 +42,20 @@ if __name__ == '__main__':
 
     all_df = pd.DataFrame()
     for excelfile in files:
+<<<<<<< HEAD
 
         df_file = pd.read_excel(excelfile, sheet_name='交易记录', header=0)
         df_file = df_file.dropna(how='all')
         if(df_file.empty):
             continue
 
+=======
+        df_file = pd.read_excel(excelfile, sheet_name='交易记录', header=0)
+        df_file = df_file.dropna(how='all')
+        if(df_file.empty):
+            continue
+
+>>>>>>> parent of a03d006... done
         df_file.rename(columns={'委托类别':'操作', '买入标志':'操作', \
                                 '买卖标志':'操作', '成交均价':'成交价格', \
                                 '发生金额':'成交金额',}, inplace = True)
