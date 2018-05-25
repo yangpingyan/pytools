@@ -47,7 +47,7 @@ except ImportError:
 #from pywinauto.findbestmatch import MatchError
 from pywinauto.timings import Timings
 
-Timings.window_find_timeout = 10
+Timings.window_find_timeout = 1
 
 def test_exceptions():
     """Test some things that should raise exceptions"""
@@ -84,24 +84,24 @@ def get_info():
 
     app.start(r"notepad.exe")
 
-    app.Notepad.menu_select("File->PageSetup")
+    app.Notepad.menu_select("文件->页面设置")
 
     print("==" * 20)
     print("Windows of this application:", app.windows())
 
     print("The list of identifiers for the Page Setup dialog in Notepad")
     print("==" * 20)
-    app.PageSetup.print_control_identifiers()
+    app.页面设置.print_control_identifiers()
     print("==" * 20)
     print("The list of identifiers for the 2nd Edit control in the dialog")
-    app.PageSetup.Edit2.print_control_identifiers()
+    app.页面设置.Edit2.print_control_identifiers()
     print("==" * 20)
 
-    app.PageSetup.OK.close_click()
-    app.Notepad.menu_select("File->Exit")
+    app.页面设置.确定.close_click()
+    app.Notepad.menu_select("文件->退出")
 
 
 
 if __name__ == '__main__':
-    test_exceptions()
+#    test_exceptions()
     get_info()

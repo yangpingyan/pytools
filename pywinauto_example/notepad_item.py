@@ -45,14 +45,14 @@ app.start(r"notepad.exe")
 
 app['Notepad'].wait('ready')
 
-app['Notepad'].menu_select("File->PageSetup")
+app['Notepad'].menu_select("文件->页面设置")
 
 # ----- Page Setup Dialog ----
 # Select the 4th combobox item
-app['PageSetupDlg']['ComboBox1'].select(4)
+app['页面设置']['ComboBox1'].select(4)
 
 # Select the 'Letter' combobox item
-app['PageSetupDlg']['ComboBox1'].select("Letter")
+app['页面设置']['ComboBox1'].select("Letter")
 
 # ----- Next Page Setup Dialog ----
 app['PageSetupDlg']['Printer'].click()

@@ -12,9 +12,9 @@ import sys, os
 os.chdir(os.path.join(os.getcwd(), os.path.dirname(sys.argv[0])))
 import pywinauto
 
-app = pywinauto.Application().Start(r'msiexec.exe /i 7z920-x64.msi')
+app = pywinauto.Application().Start(r'msiexec.exe /i 7z1801-x64.exe')
 
-Wizard = app['7-Zip 9.20 (x64 edition) Setup']
+Wizard = app['7z1801-x64']
 Wizard.NextButton.click()
 
 Wizard['I &accept the terms in the License Agreement'].wait('enabled').check_by_click()

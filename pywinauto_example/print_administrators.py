@@ -49,7 +49,7 @@ if is_user_an_admin():
 
     app = connect_to_mmc()
     tree = app.mmc_main_frame.tree_view
-    groups = tree.get_item(r'\Computer Management (Local)\System Tools\Local Users and Groups\Groups')
+    groups = tree.get_item(r'\计算机管理(本地)\系统工具\本地用户和组\组')
     groups.click()
     items = app.mmc_main_frame.list_view.items()
     print('\nGroups:')
