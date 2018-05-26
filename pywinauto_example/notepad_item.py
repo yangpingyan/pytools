@@ -43,64 +43,34 @@ from pywinauto import application
 app = application.Application()
 app.start(r"notepad.exe")
 
-app['Notepad'].wait('ready')
+app['无标题 - 记事本'].wait('ready')
 
-app['Notepad'].menu_select("文件->页面设置")
+app['无标题 - 记事本'].menu_select("文件->页面设置")
 
 # ----- Page Setup Dialog ----
 # Select the 4th combobox item
 app['页面设置']['ComboBox1'].select(4)
 
 # Select the 'Letter' combobox item
-app['页面设置']['ComboBox1'].select("Letter")
+app['页面设置']['ComboBox1'].select("信纸")
+app['页面设置']['确定'].click()
 
-# ----- Next Page Setup Dialog ----
-app['PageSetupDlg']['Printer'].click()
-
-app['PageSetupDlg']['Network'].click()
-
+app['无标题 - 记事本'].menu_select("文件->打印(P)")
 # ----- Connect To Printer Dialog ----
 # Select a checkbox
-app['ConnectToPrinter']['ExpandByDef'].check()
+app['打印']['打印到文件'].check()
 # Uncheck it again - but use click this time!
-app['ConnectToPrinter']['ExpandByDef'].click()
+app['打印']['打印到文件'].click()
 
-app['ConnectToPrinter']['OK'].close_click()
+app['打印']['取消'].close_click()
 
-# ----- 2nd Page Setup Dialog again ----
-app['PageSetupDlg2']['Properties'].click()
 
-# ----- Document Properties Dialog ----
-doc_props = app.window(title_re = ".*Document Properties")
-
-# Two ways of selecting tabs
-doc_props['TabCtrl'].select(2)
-doc_props['TabCtrl'].select("Layout")
-
-# click a Radio button
-doc_props['RotatedLandscape'].click()
-doc_props['Portrait'].click()
-
-# open the Advanced options dialog in two steps
-advbutton = doc_props['Advanced']
-advbutton.click()
-
-# ----- Advanced Options Dialog ----
-# close the 4 windows
-app.window(title_re = ".* Advanced Options")['Ok'].click()
-
-# ----- Document Properties Dialog again ----
-doc_props['Cancel'].close_click()
-# ----- 2nd Page Setup Dialog again ----
-app['PageSetup2']['OK'].close_click()
-# ----- Page Setup Dialog ----
-app['PageSetup']['Ok'].close_click()
 
 # type some text
-app['Notepad']['Edit'].set_edit_text("I am typing s\xe4me text to Notepad"
+app['无标题 - 记事本']['Edit'].set_edit_text("I am typing s\xe4me text to Notepad"
     "\r\n\r\nAnd then I am going to quit")
 
 # exit notepad
-app['NotepadDialog'].menu_select("File->Exit")
-app['Notepad']['No'].close_click()
+app['无标题 - 记事本'].menu_select("文件->退出")
+app['记事本']['不保存'].close_click()
 
