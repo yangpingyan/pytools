@@ -13,6 +13,8 @@ app = Application(backend="uia").start('notepad.exe')
 dlg_spec = app.window(title='无标题 - 记事本')
 #dlg_spec = app.window(best_match='无标题 - 记事本')
 
+#app[u'your dlg title'][u'your ctrl title']
+#
 # wait till the window is really open
 actionable_dlg = dlg_spec.wait('visible')
 
