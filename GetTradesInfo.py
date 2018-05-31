@@ -25,15 +25,16 @@ import logging
 
 def getAllExcelFiles(file_dir):
     L = []
-    for root, dirs, files in os.walk(file_dir):
-        for file in files:
-            if os.path.splitext(file)[1] == '.xlsx' \
-                and file.startswith('LB') is False \
-                and file.startswith('LS') is False \
-                and file.startswith('1') is False \
-                and file.startswith('.') is False \
-                and file.startswith('~') is False:
-                L.append(os.path.join(root, file))
+#    for root, dirs, files in os.walk(file_dir):
+    files = os.listdir(file_dir)
+    for file in files:
+        if os.path.splitext(file)[1] == '.xlsx' \
+            and file.startswith('LB') is False \
+            and file.startswith('LS') is False \
+            and file.startswith('1') is False \
+            and file.startswith('.') is False \
+            and file.startswith('~') is False:
+            L.append(os.path.join(file_dir, file))
     return L
 
 if __name__ == '__main__':
@@ -46,47 +47,32 @@ if __name__ == '__main__':
 
     all_df = pd.DataFrame()
     for excelfile in files:
-#        print(excelfile)
-        df_file = pd.read_excel(excelfile, sheet_name='交割单', header=0)
-#        print(df_file)
-        df_file = df_file.dropna(how='all')
-        if(df_file.empty):
-            continue
-     
-        df_file.rename(columns={'委托类别':'操作', '买入标志':'操作', \
-                                '买卖标志':'操作', '成交均价':'成交价格', \
-                                '发生金额':'成交金额','交割日期':'成交日期',\
-                                '股票名称':'证券名称','买卖类型':'操作',\
-                                '业务名称':'操作','发生日期':'成交日期',}, inplace = True)
-        df_file = df_file[['成交日期', '证券名称', '操作', '成交数量', '成交价格', '成交金额']]
-        df_file = df_file.dropna(subset=['证券名称', '成交数量', '成交金额'])
-        df_file = df_file[df_file['证券名称'].str.contains('雷科防务')]
-        account_name = re.findall(r"[\u4e00-\u9fa5]{1,}-[\u4e00-\u9fa5]{1,}", excelfile)
-        df_file['账户'] = "".join(account_name)
-
-        all_df = pd.concat([all_df, df_file], join='outer', axis=0, ignore_index=True)
-        
-    for excelfile in files:
-#        print(excelfile)
-        df_file = pd.read_excel(excelfile, sheet_name='当日成交', header=0)
-#        print(df_file)
-        df_file = df_file.dropna(how='all')
-        if(df_file.empty):
-            continue
-     
-        df_file.rename(columns={'委托类别':'操作', '买入标志':'操作', \
-                                '买卖标志':'操作', '成交均价':'成交价格', \
-                                '发生金额':'成交金额','交割日期':'成交日期',\
-                                '股票名称':'证券名称','买卖类型':'操作',\
-                                '业务名称':'操作','发生日期':'成交日期',}, inplace = True)
-        df_file = df_file[['成交日期', '证券名称', '操作', '成交数量', '成交价格', '成交金额']]
-        df_file = df_file.dropna(subset=['证券名称', '成交数量', '成交金额'])
-        df_file = df_file[df_file['证券名称'].str.contains('雷科防务')]
-        account_name = re.findall(r"[\u4e00-\u9fa5]{1,}-[\u4e00-\u9fa5]{1,}", excelfile)
-        df_file['账户'] = "".join(account_name)
-
-        all_df = pd.concat([all_df, df_file], join='outer', axis=0, ignore_index=True)
-        
+        print(excelfile)
+        sheet_list = ['交割单', '当日成交']
+        for sheet_name in sheet_list :
+            df_file = pd.read_excel(excelfile, sheet_name=sheet_name, header=0)
+            if '成交金额' in df_file.columns and '发生金额' in df_file.columns :
+                df_file.drop(['发生金额'], axis=1, inplace=True)
+            df_file = df_file.dropna(how='all')
+         
+            df_file.rename(columns={'委托类别':'操作', '买入标志':'操作', \
+                                    '买卖标志':'操作', '成交均价':'成交价格', \
+                                    '发生金额':'成交金额','交割日期':'成交日期',\
+                                    '股票名称':'证券名称','买卖类型':'操作',\
+                                    '业务名称':'操作','发生日期':'成交日期',\
+                                    '交易日期':'成交日期',}, inplace = True)
+            df_file = df_file[['成交日期', '证券名称', '操作', '成交数量', '成交价格', '成交金额']]
+            df_file = df_file.dropna(subset=['证券名称', '成交数量', '成交金额'])
+            if(df_file.empty):
+                continue
+            df_file = df_file[df_file['证券名称'] == '雷科防务']
+            if(df_file.empty):
+                continue
+            account_name = re.findall(r"\w{1,}-[\u4e00-\u9fa5]{1,}-[\u4e00-\u9fa5]{1,}", excelfile)
+            df_file['账户'] = "".join(account_name)
+    
+            all_df = pd.concat([all_df, df_file], join='outer', axis=0, ignore_index=True)
+      
 
     all_df['成交日期'] = [x if isinstance(x,str) else "%d"%x for x in all_df['成交日期']]
     all_df['成交数量'] = all_df['成交数量'].apply(lambda x:abs(x))
