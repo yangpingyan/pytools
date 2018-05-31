@@ -68,7 +68,7 @@ def run_notepad():
     #    app.start_(r"c:\windows\system32\notepad.exe")
     app.start(r"notepad.exe")
 
-    app.Notepad.menu_select("文件->页面设置")
+    app.Notepad.menu_select("File->PageSetup")
 
     # ----- Page Setup Dialog ----
     # Select the 4th combobox item

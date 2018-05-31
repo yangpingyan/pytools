@@ -14,10 +14,10 @@ from pywinauto import Application
 
 # Open "Control Panel"
 Application().start('control.exe')
-app = Application(backend='uia').connect(path='explorer.exe', title='控制面板')
+app = Application(backend='uia').connect(path='explorer.exe', title='Control Panel')
 
 # Go to "Programs"
-app.window(title='控制面板').ProgramsHyperlink.invoke()
+app.window(title='Control Panel').ProgramsHyperlink.invoke()
 app.wait_cpu_usage_lower(threshold=0.5, timeout=30, usage_interval=1.0)
 
 # Go to "Installed Updates"
