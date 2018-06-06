@@ -4,5 +4,4 @@ python-docx
 xlrd
 openpyxl
 easyutils
-PIL
 pypdf2
