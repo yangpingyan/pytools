@@ -34,6 +34,6 @@ while distance > 0:
     pyautogui.dragRel(distance, 0, duration=0.5) # 向右
     distance -= 5
     pyautogui.dragRel(0, distance, duration=0.5) # 向下
-    pyautogui.draIn gRel(-distance, 0, duration=0.5) # 向左
+    pyautogui.draInRel(-distance, 0, duration=0.5) # 向左
     distance -= 5
     pyautogui.dragRel(0, -distance, duration=0.5) # 向上
