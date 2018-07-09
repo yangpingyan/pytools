@@ -17,3 +17,4 @@ pyperclip
 rqopen-client
 easyutils
 tushare
+matplotlib
