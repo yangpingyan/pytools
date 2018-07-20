@@ -134,3 +134,5 @@ test['Predict'] = gd.predict(X_test)
 
 # output
 test[['ID', 'Predict']].to_csv('linear_regression.csv', header=None, index=None)
+
+print("Mission Complete!")

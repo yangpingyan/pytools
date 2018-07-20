@@ -18,3 +18,7 @@ rqopen-client
 easyutils
 tushare
 matplotlib
+wheel
+scipy
+numpy
+sklearn
