@@ -64,6 +64,7 @@ def gen_regression_form(df):
 
 path_valid_data = './valid_data.csv'
 if os.path.isfile(path_valid_data):
+    print("read valid_data file {}".format(path_valid_data))
     valid_data = pd.read_csv(path_valid_data)
 else:
     valid_data = gen_regression_form(df_12m)
@@ -71,6 +72,7 @@ else:
 
 path_train_data = './train_data.csv'
 if os.path.isfile(path_train_data):
+    print("read train data file {}".format(path_train_data))
     train_data = pd.read_csv(path_train_data)
 else:
     train_data = gen_regression_form(df_not_12m)
