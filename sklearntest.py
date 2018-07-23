@@ -7,7 +7,7 @@ from sklearn import datasets
 from sklearn import svm
 
 
-iris = datasets.load_iris()
+
 digits = datasets.load_digits()
 
 
