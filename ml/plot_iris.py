@@ -33,6 +33,8 @@ kernel and its parameters.
    more realistic high-dimensional problems.
 
 """
+from sklearn.model_selection import train_test_split
+
 print(__doc__)
 
 import numpy as np
@@ -79,9 +81,10 @@ def plot_contours(ax, clf, xx, yy, **params):
 
 # import some data to play with
 iris = datasets.load_iris()
+X_train, X_test, y_train, y_test = train_test_split(iris.data[:, :2], iris.target, test_size=0.3, random_state=0)
 # Take the first two features. We could avoid this by using a two-dim dataset
-X = iris.data[:, :2]
-y = iris.target
+X = X_train
+y = y_train
 
 # we create an instance of SVM and fit out data. We do not scale our
 # data since we want to plot the support vectors
@@ -90,8 +93,11 @@ models = (svm.SVC(kernel='linear', C=C),
           svm.LinearSVC(C=C),
           svm.SVC(kernel='rbf', gamma=0.7, C=C),
           svm.SVC(kernel='poly', degree=3, C=C))
-models = (clf.fit(X, y) for clf in models)
-
+clfs = (clf.fit(X, y) for clf in models)
+for clf in clfs:
+    score = clf.score(X_test, y_test)
+    # kernel = clf.kernel
+    print("{}".format(score))
 # title for the plots
 titles = ('SVC with linear kernel',
           'LinearSVC (linear kernel)',

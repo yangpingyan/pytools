@@ -129,7 +129,7 @@
   `version` int(8) DEFAULT '0',
   `user_id` int(11) NOT NULL COMMENT '用户ID',
   `order_id` int(11) NOT NULL COMMENT '订单ID',
-  `zmxy_score` varchar(255) DEFAULT NULL COMMENT '芝麻信用分数',
+  `zmxy_score` varchar(255) DEFAULT NULL COMMENT '京东小白分/芝麻信用分数', 88.1/574
   `card_id` varchar(255) NOT NULL COMMENT '身份证号',
   `card_name` varchar(255) NOT NULL COMMENT '身份证姓名',
   `contact` varchar(255) NOT NULL COMMENT '联系人',
