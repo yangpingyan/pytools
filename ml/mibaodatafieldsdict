@@ -174,7 +174,7 @@
   `version` bigint(20) DEFAULT '0',
   `order_id` int(11) DEFAULT NULL,
   `order_number` varchar(50) DEFAULT NULL,
-  `type` enum('tongdun','mibao','guanzhu','bai_qi_shi') DEFAULT NULL COMMENT '信审类目',
+  `type.1` enum('tongdun','mibao','guanzhu','bai_qi_shi') DEFAULT NULL COMMENT '信审类目',
   `remark` varchar(100) DEFAULT NULL COMMENT '备注 (分数，状态说明)',
   `result` varchar(50) DEFAULT NULL COMMENT '审核结果（命中 OR 无）',
   `detail_json` longtext COMMENT '风险明细',

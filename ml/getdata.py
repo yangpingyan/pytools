@@ -23,19 +23,18 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['cost', 'discount','installment',
-             'pay_num', 'added_service', 'first_pay', 'full',
-            'channel', 'pay_type', 'goods_type',  'lease_term', 'daily_rent',
-            'accident_insurance', 'freeze_money', 'ip', 'pid', 'releted', 'order_type', 'delivery_way',
-            'source', 'disposable_payment_discount', 'disposable_payment_enabled',
+features = ['cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel', 'pay_type',
+            'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type', 'freeze_money', 'ip',
+            'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
+            'disposable_payment_enabled',
             'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id', 'contact',
             'phone', 'provice', 'city', 'regoin', 'receive_address',
             'emergency_contact_name', 'phone_book', 'emergency_contact_phone', 'emergency_contact_relation',
-            'type', 'result', 'detail_json' ]
-result = ['state', 'cancel_reason', 'credit_check_result', 'check_result', 'check_remark', 'finished_state']
+            'type.1',  'detail_json']
+result = ['state', 'cancel_reason', 'check_result', 'result', 'credit_check_result', 'check_remark', 'finished_state']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
-df['accident_insurance'].value_counts()
+df['remark'].value_counts()
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 取有审核结果的数据
@@ -53,7 +52,6 @@ print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 df = df[df['cancel_reason'].str.contains('测试') != True]
 df = df[df['check_remark'].str.contains('测试') != True]
 print("去除测试数据后的数据量: {}".format(df.shape))
-
 
 for col in df.columns:
     try:
