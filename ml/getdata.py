@@ -23,19 +23,19 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['cost', 'discount', 'pay',
-            'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'billing_method',
-            'channel', 'pay_type', 'goods_type', 'cash_pledge', 'lease_term', 'commented', 'daily_rent',
+features = ['cost', 'discount','installment',
+             'pay_num', 'added_service', 'first_pay', 'full',
+            'channel', 'pay_type', 'goods_type',  'lease_term', 'daily_rent',
             'accident_insurance', 'freeze_money', 'ip', 'pid', 'releted', 'order_type', 'delivery_way',
             'source', 'disposable_payment_discount', 'disposable_payment_enabled',
             'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id', 'contact',
             'phone', 'provice', 'city', 'regoin', 'receive_address',
             'emergency_contact_name', 'phone_book', 'emergency_contact_phone', 'emergency_contact_relation',
-            'type', 'result', 'detail_json', 'joke']
-result = ['cancel_reason', 'credit_check_result', 'check_result', 'check_remark', 'finished_state']
+            'type', 'result', 'detail_json' ]
+result = ['state', 'cancel_reason', 'credit_check_result', 'check_result', 'check_remark', 'finished_state']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
-
+df['accident_insurance'].value_counts()
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 取有审核结果的数据
@@ -49,46 +49,87 @@ for col in df.columns:
 df.drop(cols, axis=1, errors='ignore', inplace=True)
 print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 
+# 去除测试数据
+df = df[df['cancel_reason'].str.contains('测试') != True]
+df = df[df['check_remark'].str.contains('测试') != True]
+print("去除测试数据后的数据量: {}".format(df.shape))
+
+
+for col in df.columns:
+    try:
+        print(col, len(df[df[col].str.contains('测试') == True]))
+    except:
+        pass
+
 # 特征处理
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
 # 处理芝麻信用分
-df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
-df['zmxy_score'] = df['zmxy_score'].apply(lambda x: 599 if isinstance(x, str) and '>' in  x else x)
-df['zm_score'] = df['zmxy_score'].apply(lambda x: 588 if isinstance(x, str) and '/' in x and x[-1] != 'x' else (x))
+# df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
 
-df.sort_values(by=['zmxy_score'], inplace=True)
-x = '87.4/'
-re.split(r'[/>]', '500')
-count=0
-for x, cnt in df['zmxy_score']:
-    print(x, cnt)
-    # if isinstance(x, str):
-    #     if '>' in x:
-    #
-    #     try:
-    #         float(x.split('/')[1])
-    #     except ValueError as e:
-    #         print(count, x,)
-    # count += 1
+row = 0
+zmf = [None] * len(df)
+xbf = [None] * len(df)
+for x in df['zmxy_score']:
+    # print(x, row)
+    if
+isinstance(x, str):
+if '/' in x:
+    score = x.split('/')
+xbf[row] = None if score[0] == '' else float(score[0])
+zmf[row] = None if score[1] == '' else float(score[1])
+# print(score, row)
+elif '>' in x:
+zmf[row] = 600
+else:
+score = float(x)
+if score <= 200:
+    xbf[row] = score
+else:
+    zmf[row] = score
 
+pass
+row += 1
+df['zmf_score'] = zmf
+df['xbf_score'] = xbf
 
 check_counts = df['check_result'].value_counts()
 print("所有数据中：审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-check_counts = df[df['zmxy_score'] == 599]['check_result'].value_counts()
-print("未知大于600的芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-                                                     check_counts[1] / (check_counts[0] + check_counts[1])))
-check_counts = df[(df['zmxy_score'] >= 600) & (df['zmxy_score'] < 700)]['check_result'].value_counts()
+check_counts = df[df['zmf_score'] < 600]['check_result'].value_counts()
+print("小于600的芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[(df['zmf_score'] >= 600) & (df['zmf_score'] < 700)]['check_result'].value_counts()
 print("6XX芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                 check_counts[1] / (check_counts[0] + check_counts[1])))
-check_counts = df[(df['zmxy_score'] >= 700) & (df['zmxy_score'] < 800)]['check_result'].value_counts()
+check_counts = df[(df['zmf_score'] >= 700) & (df['zmf_score'] < 800)]['check_result'].value_counts()
 print("7XX芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                 check_counts[1] / (check_counts[0] + check_counts[1])))
-check_counts = df[df['zmxy_score'] >= 800]['check_result'].value_counts()
+check_counts = df[df['zmf_score'] >= 800]['check_result'].value_counts()
 print("大于800芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
-#
+
+check_counts = df[df['xbf_score'] < 60]['check_result'].value_counts()
+print("小于60的小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                                  check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[(df['xbf_score'] >= 60) & (df['xbf_score'] < 70)]['check_result'].value_counts()
+print("6X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                               check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[(df['xbf_score'] >= 70) & (df['xbf_score'] < 80)]['check_result'].value_counts()
+print("7X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                               check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[(df['xbf_score'] >= 80) & (df['xbf_score'] < 90)]['check_result'].value_counts()
+print("8X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                               check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[(df['xbf_score'] >= 90) & (df['xbf_score'] < 100)]['check_result'].value_counts()
+print("9X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                               check_counts[1] / (check_counts[0] + check_counts[1])))
+check_counts = df[df['xbf_score'] >= 100]['check_result'].value_counts()
+print("大于100小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                                  check_counts[1] / (check_counts[0] + check_counts[1])))
+
+df.sort_values(by=['state', 'cancel_reason'], inplace=True)
+
 # avail_zmxy_df = df[df['zmxy_score'] > 599]
 # avail_zmxy_s = pd.Series(avail_zmxy_df['zmxy_score'].value_counts())
 # failure_zmxy_df = avail_zmxy_df[avail_zmxy_df['check_result'] == 0]
