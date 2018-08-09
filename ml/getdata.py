@@ -23,14 +23,15 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel', 'pay_type',
+features = ['goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel',
+            'pay_type',
             'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type', 'freeze_money', 'ip',
             'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
             'disposable_payment_enabled',
             'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id', 'contact',
             'phone', 'provice', 'city', 'regoin', 'receive_address',
             'emergency_contact_name', 'phone_book', 'emergency_contact_phone', 'emergency_contact_relation',
-            'type.1',  'detail_json']
+            'type.1', 'detail_json']
 result = ['state', 'cancel_reason', 'check_result', 'result', 'credit_check_result', 'check_remark', 'finished_state']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
@@ -70,24 +71,22 @@ zmf = [None] * len(df)
 xbf = [None] * len(df)
 for x in df['zmxy_score']:
     # print(x, row)
-    if
-isinstance(x, str):
-if '/' in x:
-    score = x.split('/')
-xbf[row] = None if score[0] == '' else float(score[0])
-zmf[row] = None if score[1] == '' else float(score[1])
-# print(score, row)
-elif '>' in x:
-zmf[row] = 600
-else:
-score = float(x)
-if score <= 200:
-    xbf[row] = score
-else:
-    zmf[row] = score
+    if isinstance(x, str):
+        if '/' in x:
+            score = x.split('/')
+            xbf[row] = None if score[0] == '' else float(score[0])
+            zmf[row] = None if score[1] == '' else float(score[1])
+            # print(score, row)
+        elif '>' in x:
+            zmf[row] = 600
+        else:
+            score = float(x)
+        if score <= 200:
+            xbf[row] = score
+        else:
+            zmf[row] = score
 
-pass
-row += 1
+    row += 1
 df['zmf_score'] = zmf
 df['xbf_score'] = xbf
 
