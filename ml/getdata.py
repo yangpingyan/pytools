@@ -60,7 +60,7 @@ for col in df.columns:
         pass
 
 # 特征处理
-df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
+# df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
 # 处理芝麻信用分
 # df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
