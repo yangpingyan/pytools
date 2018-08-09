@@ -9,7 +9,7 @@ import pandas as pd
 import os
 
 ## Step 2: Importing dataset
-dataset = pd.read_csv(r'.\ml\100-Days-Of-ML-Code-master\datasets\Data.csv')
+dataset = pd.read_csv(r'.\100-Days-Of-ML-Code-master\datasets\Data.csv')
 X = dataset.iloc[:, :-1].values
 Y = dataset.iloc[:, 3].values
 
