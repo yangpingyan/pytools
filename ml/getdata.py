@@ -21,7 +21,6 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 
 # 处理身份证号
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
-
 # 取可能有用的数据
 features = ['goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
@@ -55,14 +54,19 @@ print("去除测试数据后的数据量: {}".format(df.shape))
 df = df[df['state'].str.contains('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
 
-# for col in df.columns:
-#     try:
-#         print(col, len(df[df[col].str.contains('测试') == True]))
-#     except:
-#         pass
+# 特征处空值处理
+# channel -随机处理
+#  pay_type# ip# zmxy_score# card_id# contact# phone# provice# city# regoin# receive_address
+# emergency_contact_name# phone_book# emergency_contact_phone# emergency_contact_relation# type.1# detail_json
+df.loc[df['discount'].isnull(), 'discount'] = 0
+df.loc[df['added_service'].isnull(), 'added_service'] = 0
+df.loc[df['first_pay'].isnull(), 'first_pay'] = 0
 
-# 特征处理
-# df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
+df['card_id'].value_counts()
+len(df[df['card_id'].isnull()])
+for col in df.columns:
+    if len(df[df[col].isnull()]) != 0:
+        print(col)
 
 # 处理芝麻信用分
 # df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
