@@ -19,6 +19,7 @@ y = dataset.iloc[:, 4].values
 
 ### Splitting the dataset into the Training set and Test set
 from sklearn.model_selection import train_test_split
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
 
 ### Feature Scaling
@@ -44,9 +45,19 @@ y_pred = classifier.predict(X_test)
 
 ### Making the Confusion Matrix
 from sklearn.metrics import confusion_matrix
+
 cm = confusion_matrix(y_test, y_pred)
 
 ## Visualization
 import matplotlib.pyplot as plt
-plt.scatter(X_train[:, 0], X_train[:, 1], 'r')
-plt.scatter(X_test[:,0], y_pred, color='b')
+
+x_1 = X_train[np.where(y_train == 1)]
+x_0 = X_train[np.where(y_train == 0)]
+fig, ax = plt.subplots()
+ax.scatter(x_0[:, 0], x_0[:, 1], color='b', label='0')
+ax.scatter(x_1[:, 0], x_1[:, 1], color='r', label='1')
+
+ax.set(xlabel='time (s)', ylabel='voltage (mV)',
+       title='About as simple as it gets, folks')
+ax.grid()
+plt.show()

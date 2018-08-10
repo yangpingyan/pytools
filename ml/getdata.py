@@ -35,7 +35,7 @@ features = ['goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_s
 result = ['state', 'cancel_reason', 'check_result', 'result', 'credit_check_result', 'check_remark', 'finished_state']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
-df['remark'].value_counts()
+
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 取有审核结果的数据
@@ -54,11 +54,13 @@ df = df[df['cancel_reason'].str.contains('测试') != True]
 df = df[df['check_remark'].str.contains('测试') != True]
 print("去除测试数据后的数据量: {}".format(df.shape))
 
-for col in df.columns:
-    try:
-        print(col, len(df[df[col].str.contains('测试') == True]))
-    except:
-        pass
+
+
+# for col in df.columns:
+#     try:
+#         print(col, len(df[df[col].str.contains('测试') == True]))
+#     except:
+#         pass
 
 # 特征处理
 # df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
@@ -81,10 +83,10 @@ for x in df['zmxy_score']:
             zmf[row] = 600
         else:
             score = float(x)
-        if score <= 200:
-            xbf[row] = score
-        else:
-            zmf[row] = score
+            if score <= 200:
+                xbf[row] = score
+            else:
+                zmf[row] = score
 
     row += 1
 df['zmf_score'] = zmf

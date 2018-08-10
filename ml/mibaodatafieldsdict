@@ -37,7 +37,36 @@
   `user_name` varchar(255) NOT NULL COMMENT '用户名字',
   `goods_name` varchar(255) NOT NULL COMMENT '商品名字',
   `goods_sn` varchar(255) DEFAULT NULL COMMENT '商品SN码',
-  `state` varchar(50) NOT NULL COMMENT '订单状态',
+  `state` varchar(50) NOT NULL COMMENT '订单状态', 字段解释？？？
+        artificial_credit_check_unpass_canceled    50009
+        user_canceled                              17687
+        order_payment_overtime_canceled             3766
+        lease_finished                              2876
+        running                                     2644
+        buyout_finished                              310
+        merchant_not_yet_send_canceled               196
+        pending_pay                                  146
+        running_overdue                              141
+        pending_receive_goods                        133
+        pending_jimi_credit_check                    126
+        returning                                    112
+        pending_send_goods                            53
+        relet_finished                                30
+        return_overdue                                29
+        pending_artificial_credit_check               23
+        pending_relet_check                           18
+        pending_relet_start                           15
+        pending_user_compensate                        9
+        returned_received                              8
+        pending_return                                 8
+        return_goods                                   6
+        express_rejection_canceled                     4
+        system_credit_check_unpass_canceled            3
+        pending_compensate_check                       2
+        repairing                                      2
+        exchange_goods                                 2
+        merchant_relet_check_unpass_canceled           1
+        pending_refund_deposit                         1
   `cost` bigint(20) NOT NULL COMMENT '订单总租金',
   `discount` bigint(20) DEFAULT NULL COMMENT '优惠金额',
   `pay` bigint(20) DEFAULT NULL COMMENT '支付金额（订单总租金+运费+押金）暂时不用',
@@ -177,5 +206,5 @@
   `type.1` enum('tongdun','mibao','guanzhu','bai_qi_shi') DEFAULT NULL COMMENT '信审类目',
   `remark` varchar(100) DEFAULT NULL COMMENT '备注 (分数，状态说明)',
   `result` varchar(50) DEFAULT NULL COMMENT '审核结果（命中 OR 无）',
-  `detail_json` longtext COMMENT '风险明细',
+  `detail_json` longtext COMMENT '风险明细', 字段解释？？？
   `joke` int(11) DEFAULT '-1' COMMENT '-1:程序生成数据；0：机蜜信审订单拒绝数据1：机蜜信审订单通过数据；',
