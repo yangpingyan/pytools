@@ -55,9 +55,10 @@ x_1 = X_train[np.where(y_train == 1)]
 x_0 = X_train[np.where(y_train == 0)]
 fig, ax = plt.subplots()
 ax.scatter(x_0[:, 0], x_0[:, 1], color='b', label='0')
-ax.scatter(x_1[:, 0], x_1[:, 1], color='r', label='1')
+ax.scatter(x_1[:, 0], x_1[:, 1], color='r', label='2')
 
 ax.set(xlabel='time (s)', ylabel='voltage (mV)',
        title='About as simple as it gets, folks')
 ax.grid()
+plt.legend()
 plt.show()
