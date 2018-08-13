@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
-import re
+import json
 
 csv.field_size_limit(100000000)
 
@@ -15,9 +15,6 @@ df_alldata = pd.read_csv(r"C:\Users\Administrator\iCloudDrive\蜜宝数据\学�
 print("原始数据量: {}".format(df_alldata.shape))
 df = df_alldata.dropna(axis=1, how='all')
 print("去除所有特征为空后的数据量: {}".format(df.shape))
-# features_drop = ['user_name', 'phone' ]
-# df.drop(columns=features_drop, axis=1, inplace=True)
-# print("去除无效特征后的数据量: {}".format(df.shape))
 
 # 处理身份证号
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
@@ -51,8 +48,55 @@ df = df[df['check_remark'].str.contains('测试') != True]
 print("去除测试数据后的数据量: {}".format(df.shape))
 
 # 去掉用户自己取消的数据
-df = df[df['state'].str.contains('user_canceled') != True]
+df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
+
+# 处理running_overdue 和 return_overdue 的逾期 的 check_result
+df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
+
+# 处理detail_json
+detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
+for col in detail_cols:
+    df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
+
+detail_cols = ['INFOANALYSIS', 'RENT']
+for col in detail_cols:
+    df[col] = df['result_desc'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+detail_cols = ['geotrueip_info', 'device_info', 'address_detect', 'geoip_info']
+for col in detail_cols:
+    df[col] = df['INFOANALYSIS'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+detail_cols = ['risk_items', 'final_score', 'final_decision']
+for col in detail_cols:
+    df[col] = df['RENT'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+
+
+df.drop(['result_desc', 'INFOANALYSIS', 'RENT'], axis=1, errors='ignore', inplace=True)
+
+cols = []
+for detail in df['RENT']:
+    if isinstance(detail, dict):
+        try:
+            cols.extend(list(detail.keys()))
+        except:
+            print(detail)
+            break
+
+cols = list(set(cols))
+print(cols)
+#
+# cols = []
+# for detail in df['result_desc']:
+#     if isinstance(detail, str):
+#         try:
+#             detail_dict = json.loads(detail)
+#             cols.extend(list(detail_dict.keys()))
+#         except:
+#             print(detail)
+#             # break
+#
+# cols = list(set(cols))
+# print(cols)
+
 
 # 特征处空值处理
 # channel -随机处理
@@ -112,8 +156,8 @@ print("大于800芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.
                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
 
 check_counts = df[df['xbf_score'] < 60]['check_result'].value_counts()
-print("小于60的小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-                                                  check_counts[1] / (check_counts[0] + check_counts[1])))
+print("小于60小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
+                                                 check_counts[1] / (check_counts[0] + check_counts[1])))
 check_counts = df[(df['xbf_score'] >= 60) & (df['xbf_score'] < 70)]['check_result'].value_counts()
 print("6X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                check_counts[1] / (check_counts[0] + check_counts[1])))
