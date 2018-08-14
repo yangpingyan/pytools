@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*- 
 # @Time : 2018/8/2 16:15 
 # @Author : yangpingyan@gmail.com
-import catch as catch
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
 import csv
 import json
 
@@ -18,8 +18,9 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 
 # 处理身份证号
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
+
 # 取可能有用的数据
-features = ['goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel',
+features = ['create_time', 'goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
             'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
             'disposable_payment_enabled', 'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id',
@@ -30,7 +31,8 @@ df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
-
+# 丢弃身份证号为空的数据
+df.dropna(subset=['card_id'], inplace=True)
 # 取有审核结果的数据
 df = df[df['check_result'].str.contains('SUCCESS|FAILURE', na=False)]
 print("去除机审通过但用户取消后的数据量: {}".format(df.shape))
@@ -53,36 +55,36 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
+df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
 # 处理detail_json
-detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
-for col in detail_cols:
-    df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
-
-detail_cols = ['INFOANALYSIS', 'RENT']
-for col in detail_cols:
-    df[col] = df['result_desc'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-detail_cols = ['geotrueip_info', 'device_info', 'address_detect', 'geoip_info']
-for col in detail_cols:
-    df[col] = df['INFOANALYSIS'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-detail_cols = ['risk_items', 'final_score', 'final_decision']
-for col in detail_cols:
-    df[col] = df['RENT'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-
-
-df.drop(['result_desc', 'INFOANALYSIS', 'RENT'], axis=1, errors='ignore', inplace=True)
-
-cols = []
-for detail in df['RENT']:
-    if isinstance(detail, dict):
-        try:
-            cols.extend(list(detail.keys()))
-        except:
-            print(detail)
-            break
-
-cols = list(set(cols))
-print(cols)
+# detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
+# for col in detail_cols:
+#     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
+#
+# detail_cols = ['INFOANALYSIS', 'RENT']
+# for col in detail_cols:
+#     df[col] = df['result_desc'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+# detail_cols = ['geotrueip_info', 'device_info', 'address_detect', 'geoip_info']
+# for col in detail_cols:
+#     df[col] = df['INFOANALYSIS'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+# detail_cols = ['risk_items', 'final_score', 'final_decision']
+# for col in detail_cols:
+#     df[col] = df['RENT'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+#
+# df.drop(['result_desc', 'INFOANALYSIS', 'RENT'], axis=1, errors='ignore', inplace=True)
+#
+# cols = []
+# for detail in df['RENT']:
+#     if isinstance(detail, dict):
+#         try:
+#             cols.extend(list(detail.keys()))
+#         except:
+#             print(detail)
+#             break
+#
+# cols = list(set(cols))
+# print(cols)
 #
 # cols = []
 # for detail in df['result_desc']:
@@ -102,15 +104,16 @@ print(cols)
 # channel -随机处理
 #  pay_type# ip# zmxy_score# card_id# contact# phone# provice# city# regoin# receive_address
 # emergency_contact_name# phone_book# emergency_contact_phone# emergency_contact_relation# type.1# detail_json
-df.loc[df['discount'].isnull(), 'discount'] = 0
-df.loc[df['added_service'].isnull(), 'added_service'] = 0
-df.loc[df['first_pay'].isnull(), 'first_pay'] = 0
+# df.loc[df['discount'].isnull(), 'discount'] = 0
+# df.loc[df['added_service'].isnull(), 'added_service'] = 0
+# df.loc[df['first_pay'].isnull(), 'first_pay'] = 0
 
-df['card_id'].value_counts()
-len(df[df['card_id'].isnull()])
-for col in df.columns:
-    if len(df[df[col].isnull()]) != 0:
-        print(col)
+df['goods_name'][df['goods_name'].str.contains(r'iphone', case=False, regex=True)]
+# df['card_id'].value_counts()
+# len(df[df['card_id'].isnull()])
+# for col in df.columns:
+#     if len(df[df[col].isnull()]) != 0:
+#         print(col)
 
 # 处理芝麻信用分
 # df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
@@ -174,34 +177,8 @@ check_counts = df[df['xbf_score'] >= 100]['check_result'].value_counts()
 print("大于100小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
 
-df.sort_values(by=['state', 'cancel_reason'], inplace=True)
+# df.sort_values(by=['merchant_id'], inplace=True)
 
-# avail_zmxy_df = df[df['zmxy_score'] > 599]
-# avail_zmxy_s = pd.Series(avail_zmxy_df['zmxy_score'].value_counts())
-# failure_zmxy_df = avail_zmxy_df[avail_zmxy_df['check_result'] == 0]
-# failure_zmxy_s = pd.Series(failure_zmxy_df['zmxy_score'].value_counts())
-# s_zmxy_df = avail_zmxy_df[avail_zmxy_df['check_result'] == 1]
-# s_zmxy_s = pd.Series(s_zmxy_df['zmxy_score'].value_counts())
-# zmxy_view_df = pd.DataFrame({'avail_nums': avail_zmxy_s, 'fail_nums': failure_zmxy_s, 'success_nums': s_zmxy_s})
-#
-# # 绘图
-# fig, ax = plt.subplots()
-# bar_width = 0.35
-# opacity = 0.4
-#
-# rects1 = ax.bar(avail_zmxy_s.index, avail_zmxy_s.values, bar_width,
-#                 alpha=opacity, color='b',
-#                 label='Men')
-#
-# rects2 = ax.bar(failure_zmxy_s.index + bar_width, failure_zmxy_s.values, bar_width,
-#                 alpha=opacity, color='r',
-#                 label='Women')
-#
-# ax.set_xlabel('Group')
-# ax.set_ylabel('Scores')
-# ax.set_title('Scores by group and gender')
-# ax.set_xticks(avail_zmxy_s.index, + bar_width / 2)
-# ax.legend()
-#
-# fig.tight_layout()
-# plt.show()
+df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
+df = df[df['xbf_score']>0]
+df.to_csv("mibaodata_ml.csv", index=False)
