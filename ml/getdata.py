@@ -30,12 +30,16 @@ result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
-# df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
+
+
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
+print("去除无身份证号后的数据量: {}".format(df.shape))
+
 # 取有审核结果的数据
 df = df[df['check_result'].str.contains('SUCCESS|FAILURE', na=False)]
 print("去除机审通过但用户取消后的数据量: {}".format(df.shape))
+
 # 去除只有唯一值的列
 cols = []
 for col in df.columns:
@@ -56,6 +60,8 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
+
+# df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 处理detail_json
 # detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
@@ -108,16 +114,14 @@ df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else
 # df.loc[df['added_service'].isnull(), 'added_service'] = 0
 # df.loc[df['first_pay'].isnull(), 'first_pay'] = 0
 
-df['goods_name'][df['goods_name'].str.contains(r'iphone', case=False, regex=True)]
+
 # df['card_id'].value_counts()
 # len(df[df['card_id'].isnull()])
 # for col in df.columns:
 #     if len(df[df[col].isnull()]) != 0:
 #         print(col)
 
-# 处理芝麻信用分
-# df['jdxb_score'] = df['zmxy_score'].apply(lambda x: float(x.split('/')[0]) if isinstance(x, str) and '/' in x else None)
-
+# 处理芝麻信用分 '>600' 更改成600
 row = 0
 zmf = [None] * len(df)
 xbf = [None] * len(df)
