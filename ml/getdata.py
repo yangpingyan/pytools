@@ -20,7 +20,7 @@ print("去除所有特征为空后的数据量: {}".format(df.shape))
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['create_time', 'goods_name', 'cost', 'discount', 'installment', 'pay_num', 'added_service', 'first_pay', 'full', 'channel',
+features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
             'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
             'disposable_payment_enabled', 'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id',
@@ -48,14 +48,16 @@ for col in df.columns:
 df.drop(cols, axis=1, errors='ignore', inplace=True)
 print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 
-# 去除测试数据
-df = df[df['cancel_reason'].str.contains('测试') != True]
-df = df[df['check_remark'].str.contains('测试') != True]
-print("去除测试数据后的数据量: {}".format(df.shape))
+# 去除测试数据和内部员工数据
+df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
+df = df[df['check_remark'].str.contains('测试|内部员工') != True]
+print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
 
 # 去掉用户自己取消的数据
 df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
+
+
 
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
