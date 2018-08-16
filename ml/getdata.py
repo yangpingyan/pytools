@@ -25,12 +25,10 @@ features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_s
             'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
             'disposable_payment_enabled', 'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id',
             'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json']
+            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json', 'price', 'oldlevel']
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
-
-
 
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
@@ -56,8 +54,6 @@ print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
 # 去掉用户自己取消的数据
 df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
-
-
 
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
@@ -132,26 +128,25 @@ for x in df['zmxy_score']:
     if isinstance(x, str):
         if '/' in x:
             score = x.split('/')
-            xbf[row] = 0 if score[0] == '' else int(float(score[0])/10)
-            zmf[row] = 0 if score[1] == '' else int(float(score[1])/100)
+            xbf[row] = 0 if score[0] == '' else int(float(score[0]) / 10)
+            zmf[row] = 0 if score[1] == '' else int(float(score[1]) / 100)
             # print(score, row)
         elif '>' in x:
             zmf[row] = 6
         else:
             score = float(x)
             if score <= 200:
-                xbf[row] = int(score/10)
+                xbf[row] = int(score / 10)
             else:
-                zmf[row] = int(score/100)
+                zmf[row] = int(score / 100)
 
     row += 1
 df['zmf_score'] = zmf
 df['xbf_score'] = xbf
 
 # 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算(TODO)
-df['age'] = df['card_id'].map(lambda x: 2018-int(x[6:10]))
-df['sex'] = df['card_id'].map(lambda x: int(x[-2])%2)
-
+df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
+df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
 #
 # check_counts = df['check_result'].value_counts()

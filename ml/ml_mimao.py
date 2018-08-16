@@ -13,8 +13,7 @@ from sklearn import preprocessing
 from matplotlib.colors import ListedColormap
 from sklearn import metrics
 
-# 0.028, 0.748
-# add phone_book: 0.032, 0.737
+# discount 影响很大
 
 
 tmp = ['added_service', 'first_pay', 'channel',
