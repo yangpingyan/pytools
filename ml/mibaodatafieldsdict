@@ -235,4 +235,10 @@ array(['id', 'create_time', 'deleted', 'update_time', 'check_time',
        'joke.2', 'id.4', 'create_time.4', 'deleted.2', 'update_time.4',
        'version.3', 'order_number.3', 'check_result', 'check_remark',
        'check_time.1', 'push_result', 'push_time', 'order_id.3',
-       'canceled'], dtype=object)
+       'canceled', 'id.5', 'create_time.5', 'deleted.3', 'update_time.5',
+       'order_id.4', 'goods_id', 'goods_name.2', 'goods_no', 'image',
+       'num', 'price', 'standard', 'standard_id', 'category',
+       'category_id', 'type_id', 'type.2', 'brand', 'brand_id', 'model',
+       'model_id', 'merchant_id.2', 'old_level', 'renew', 'renew_days',
+       'joke.3', 'order_number.4', 'max_lease', 'min_lease',
+       'renew_rents', 'rent_group'], dtype=object)
