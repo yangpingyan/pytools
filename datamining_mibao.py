@@ -21,60 +21,31 @@ from matplotlib.colors import ListedColormap
 import time
 import os
 
-# to make this notebook's output stable across runs
+# to make output display better
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.max_rows', 10)
-pd.set_option('display.max_colwidth', 1000)
+pd.set_option('display.width', 1000)
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
+#read large csv file
+csv.field_size_limit(100000000)
 
-# Where to save the figures
-PROJECT_ROOT_DIR = "."
-CHAPTER_ID = "end_to_end_project"
-IMAGES_PATH = os.path.join(PROJECT_ROOT_DIR, "images", CHAPTER_ID)
+# Datasets info
+PROJECT_ROOT_DIR = os.getcwd()
+DATA_ID = "学校测试所需数据.csv"
+DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-
-def save_fig(fig_id, tight_layout=True, fig_extension="png", resolution=300):
-    return
-    path = os.path.join(IMAGES_PATH, fig_id + "." + fig_extension)
-    print("Saving figure", fig_id)
-    if tight_layout:
-        plt.tight_layout()
-    plt.savefig(path, format=fig_extension, dpi=resolution)
+df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
+df = df_alldata.dropna(axis=1, how='all')
+df.info()
+df.head()
 
 
-# # Get the data
-import tarfile
-from six.moves import urllib
-
-DOWNLOAD_ROOT = "https://raw.githubusercontent.com/ageron/handson-ml/master/"
-HOUSING_PATH = os.path.join("datasets", "housing")
-HOUSING_URL = DOWNLOAD_ROOT + "datasets/housing/housing.tgz"
 
 
-def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
-    if not os.path.isdir(housing_path):
-        os.makedirs(housing_path)
-    tgz_path = os.path.join(housing_path, "housing.tgz")
-    urllib.request.urlretrieve(housing_url, tgz_path)
-    housing_tgz = tarfile.open(tgz_path)
-    housing_tgz.extractall(path=housing_path)
-    housing_tgz.close()
-
-
-# fetch_housing_data()
-def load_housing_data(housing_path=HOUSING_PATH):
-    csv_path = os.path.join(housing_path, "housing.csv")
-    return pd.read_csv(csv_path)
-
-
-housing = load_housing_data()
-housing.head()
-housing.info()
-housing["ocean_proximity"].value_counts()
-housing.describe()
-housing.hist(bins=50, figsize=(20, 15))
+df.describe()
+df.hist(bins=50, figsize=(20, 15))
 save_fig("attribute_histogram_plots")
 # plt.show()
 
