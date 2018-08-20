@@ -82,40 +82,12 @@ save_fig("attribute_histogram_plots")
 # plt.show()
 
 # # Discover and visualize the data to gain insights
-housing.plot(kind="scatter", x="longitude", y="latitude")
-# save_fig("bad_visualization_plot")
-
-housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.1)
-# save_fig("better_visualization_plot")
-
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,
              s=housing["population"] / 100, label="population", figsize=(10, 7),
              c="median_house_value", cmap=plt.get_cmap("jet"), colorbar=True,
              sharex=False)
 plt.legend()
 # save_fig("housing_prices_scatterplot")
-
-
-california_img = mpimg.imread(PROJECT_ROOT_DIR + '/images/end_to_end_project/california.png')
-ax = housing.plot(kind="scatter", x="longitude", y="latitude", figsize=(10, 7),
-                  s=housing['population'] / 100, label="Population",
-                  c="median_house_value", cmap=plt.get_cmap("jet"),
-                  colorbar=False, alpha=0.4,
-                  )
-plt.imshow(california_img, extent=[-124.55, -113.80, 32.45, 42.05], alpha=0.5,
-           cmap=plt.get_cmap("jet"))
-plt.ylabel("Latitude", fontsize=14)
-plt.xlabel("Longitude", fontsize=14)
-
-prices = housing["median_house_value"]
-tick_values = np.linspace(prices.min(), prices.max(), 11)
-cbar = plt.colorbar()
-cbar.ax.set_yticklabels(["$%dk" % (round(v / 1000)) for v in tick_values], fontsize=14)
-cbar.set_label('Median House Value', fontsize=16)
-
-plt.legend(fontsize=16)
-# save_fig("california_housing_prices_plot")
-plt.show()
 
 corr_matrix = housing.corr()
 corr_matrix["median_house_value"].sort_values(ascending=False)
@@ -138,12 +110,9 @@ housing["population_per_household"] = housing["population"] / housing["household
 corr_matrix = housing.corr()
 corr_matrix["median_house_value"].sort_values(ascending=False)
 
-housing.plot(kind="scatter", x="rooms_per_household", y="median_house_value",
-             alpha=0.2)
+housing.plot(kind="scatter", x="rooms_per_household", y="median_house_value", alpha=0.2)
 plt.axis([0, 5, 0, 520000])
 plt.show()
-
-housing.describe()
 
 
 print("Missiong Complete!")
