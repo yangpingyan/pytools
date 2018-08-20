@@ -12,16 +12,19 @@ from sklearn.metrics import confusion_matrix
 from sklearn import preprocessing
 from matplotlib.colors import ListedColormap
 from sklearn import metrics
+from sklearn import feature_selection
+import time
+# discount 影响很大, 0.026, 0.762
 
-# discount 影响很大
+starttime = time.clock()
 
-
+print("Mission start")
 tmp = ['added_service', 'first_pay', 'channel',
        'pay_type', 'merchant_id', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
        'ip', 'releted', 'order_type', 'delivery_way', 'source',
        'lease_num', 'original_daily_rent',
        'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-       'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json',
+       'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json', 'price', 'old_level'
        'goods_type']  # 最后一排特征对预测结果影响不明显
 
 csv.field_size_limit(100000000)
@@ -36,8 +39,8 @@ df = df_ml.drop_duplicates(subset=['card_id'], keep='last')
 
 features_label = ['zmf_score', 'xbf_score', 'sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
 features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money', ]
-features_label = ['zmf_score', 'xbf_score', 'disposable_payment_discount']
-features_number = [ 'discount' ]
+#features_label = ['zmf_score', 'xbf_score', 'disposable_payment_discount']
+#features_number = [ 'discount' ]
 
 df = df[['check_result'] + features_label + features_number]
 print("Alldata for ML: {}".format(df.shape))
@@ -45,7 +48,7 @@ print("Alldata for ML: {}".format(df.shape))
 # 过滤数据
 # df = df[df['zmf_score'] > 0][df['xbf_score'] > 0]
 # df = df[df['cost'] > 0]
-# df.dropna(subset=['pay_num'], inplace=True)
+df.dropna(subset=['pay_num'], inplace=True)
 print("After handling data: {}".format(df.shape))
 
 # 特征处理
@@ -53,7 +56,7 @@ print("After handling data: {}".format(df.shape))
 # df['disposable_payment_discount'].fillna(value=0, inplace=True)
 # df['deposit'].fillna(value=0, inplace=True)
 # df['freeze_money'].fillna(value=0, inplace=True)
-# df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0)
+df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0)
 df.fillna(value=0, inplace=True)
 df['disposable_payment_discount'] = preprocessing.LabelEncoder().fit_transform(df['disposable_payment_discount'])
 
@@ -81,6 +84,7 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random
 
 ## Fitting SVM to the Training set
 classifier = SVC(kernel='rbf', random_state=0)
+#feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
 classifier.fit(x_train, y_train)
 ## Predicting the Test set results
 y_pred = classifier.predict(x_test)
@@ -112,4 +116,6 @@ print(cm / np.sum(cm, axis=1))
 # plt.legend()
 # plt.show()
 
-print("ML mission complete!")
+endtime = time.clock()
+print(endtime)
+print("ML mission complete! {:.2f}S".format((endtime-starttime)))
