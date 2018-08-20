@@ -11,7 +11,7 @@ import json
 
 csv.field_size_limit(100000000)
 
-df_alldata = pd.read_csv(r"C:\Users\Administrator\iCloudDrive\蜜宝数据\学校测试所需数据.csv", encoding='utf-8', engine='python')
+df_alldata = pd.read_csv(r".\datasets\学校测试所需数据.csv", encoding='utf-8', engine='python')
 print("原始数据量: {}".format(df_alldata.shape))
 df = df_alldata.dropna(axis=1, how='all')
 print("去除所有特征为空后的数据量: {}".format(df.shape))
