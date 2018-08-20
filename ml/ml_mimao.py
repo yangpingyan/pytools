@@ -2,18 +2,23 @@
 # -*- coding: utf-8 -*- 
 # @Time : 2018/8/14 16:30 
 # @Author : yangpingyan@gmail.com
+
+# Common imports
 import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.metrics import confusion_matrix
-from sklearn import preprocessing
 from matplotlib.colors import ListedColormap
 from sklearn import metrics
 from sklearn import feature_selection
+from sklearn import preprocessing
+from sklearn import model_selection
+from sklearn import svm
+from sklearn import metrics
 import time
+import os
+
+
 # discount 影响很大, 0.026, 0.762
 
 starttime = time.clock()

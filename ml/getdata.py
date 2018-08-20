@@ -144,7 +144,7 @@ for x in df['zmxy_score']:
 df['zmf_score'] = zmf
 df['xbf_score'] = xbf
 
-# 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算(TODO)
+# 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 

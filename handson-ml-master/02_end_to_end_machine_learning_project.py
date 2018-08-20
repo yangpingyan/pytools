@@ -30,13 +30,13 @@ import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.metrics import confusion_matrix
-from sklearn import preprocessing
 from matplotlib.colors import ListedColormap
 from sklearn import metrics
 from sklearn import feature_selection
+from sklearn import preprocessing
+from sklearn import model_selection
+from sklearn import svm
+from sklearn import metrics
 import time
 import os
 
@@ -106,59 +106,10 @@ plt.show()
 # to make this notebook's output identical at every run
 np.random.seed(42)
 
-
-import hashlib
-
-
-def test_set_check(identifier, test_ratio, hash=hashlib.md5):
-    return hash(np.int64(identifier)).digest()[-1] < 256 * test_ratio
-
-
-# If you want an implementation that supports any hash function and is compatible with both Python 2 and Python 3, here is one:
-
-# In[15]:
-
-
-def test_set_check(identifier, test_ratio, hash=hashlib.md5):
-    return bytearray(hash(np.int64(identifier)).digest())[-1] < 256 * test_ratio
-
-
-# In[16]:
-
-
-housing_with_id = housing.reset_index()  # adds an `index` column
-train_set, test_set = split_train_test_by_id(housing_with_id, 0.2, "index")
-
-# In[17]:
-
-
-housing_with_id["id"] = housing["longitude"] * 1000 + housing["latitude"]
-train_set, test_set = split_train_test_by_id(housing_with_id, 0.2, "id")
-
-# In[18]:
-
-
+train_set, test_set =  model_selection.train_test_split(housing, test_size=0.2, random_state=42)
 test_set.head()
-
-# In[19]:
-
-
-from sklearn.model_selection import train_test_split
-
-train_set, test_set = train_test_split(housing, test_size=0.2, random_state=42)
-
-# In[20]:
-
-
-test_set.head()
-
-# In[21]:
-
 
 housing["median_income"].hist()
-
-# In[22]:
-
 
 # Divide by 1.5 to limit the number of income categories
 housing["income_cat"] = np.ceil(housing["median_income"] / 1.5)
