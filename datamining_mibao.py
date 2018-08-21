@@ -23,35 +23,38 @@ import os
 
 # to make output display better
 pd.set_option('display.max_columns', 50)
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 20)
 pd.set_option('display.width', 1000)
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
-#read large csv file
+# read large csv file
 csv.field_size_limit(100000000)
 
 # Datasets info
 PROJECT_ROOT_DIR = os.getcwd()
-DATA_ID = "学校测试所需数据.csv"
+DATA_ID = "学校数据.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
-
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
+print("原始数据量: {}".format(df_alldata.shape))
+
 df = df_alldata.dropna(axis=1, how='all')
-df.info()
-df.head()
-
-
 # 处理身份证号
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
-            'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
-            'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
-            'disposable_payment_enabled', 'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id',
+features = ['goods_name', 'goods_type', 'price', 'old_level',
+            'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
+            'accident_insurance', 'freeze_money',
+            'card_id', 'zmxy_score',
+            'delivery_way', 'source', 'disposable_payment_discount',
+            'disposable_payment_enabled', 'original_daily_rent', 'deposit',
             'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json', 'price', 'old_level']
+            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json',
+            'pay_type', 'merchant_id', 'channel', 'type',   #影响比较小的元素
+            'ip', 'order_type',    #可能有用但还不知道怎么用
+            'releted', ]   #丢弃相关数据
+
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
@@ -76,6 +79,7 @@ print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
 df = df[df['check_remark'].str.contains('测试|内部员工') != True]
 print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
+
 
 # 去掉用户自己取消的数据
 df = df[df['state'].str.match('user_canceled') != True]
@@ -174,53 +178,41 @@ df['xbf_score'] = xbf
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
-#
-# check_counts = df['check_result'].value_counts()
-# print("所有数据中：审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[df['zmf_score'] < 600]['check_result'].value_counts()
-# print("小于600的芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                    check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['zmf_score'] >= 600) & (df['zmf_score'] < 700)]['check_result'].value_counts()
-# print("6XX芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                 check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['zmf_score'] >= 700) & (df['zmf_score'] < 800)]['check_result'].value_counts()
-# print("7XX芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                 check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[df['zmf_score'] >= 800]['check_result'].value_counts()
-# print("大于800芝麻分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
-#
-# check_counts = df[df['xbf_score'] < 60]['check_result'].value_counts()
-# print("小于60小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                  check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['xbf_score'] >= 60) & (df['xbf_score'] < 70)]['check_result'].value_counts()
-# print("6X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['xbf_score'] >= 70) & (df['xbf_score'] < 80)]['check_result'].value_counts()
-# print("7X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['xbf_score'] >= 80) & (df['xbf_score'] < 90)]['check_result'].value_counts()
-# print("8X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[(df['xbf_score'] >= 90) & (df['xbf_score'] < 100)]['check_result'].value_counts()
-# print("9X小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                check_counts[1] / (check_counts[0] + check_counts[1])))
-# check_counts = df[df['xbf_score'] >= 100]['check_result'].value_counts()
-# print("大于100小白分中审核拒绝{}个，审核通过{}个，通过率{:.2f}".format(check_counts[0], check_counts[1],
-#                                                   check_counts[1] / (check_counts[0] + check_counts[1])))
 
-# df.sort_values(by=['merchant_id'], inplace=True)
+# df.to_csv("mibaodata_ml.csv", index=False)
 
-# df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
-# df = df[df['xbf_score']>0]
-df.to_csv("mibaodata_ml.csv", index=False)
+# analyze data
+def counter_scatter(data, showpic=True):
+    vc = data.value_counts()
+    print(vc)
+    if (showpic):
+        df_vc = pd.DataFrame({'value': vc.index, 'counts': vc.values})
+        df_vc.plot(kind='scatter', x='value', y='counts', marker='.', alpha=0.4)
 
 
+features = ['goods_name', 'goods_type', 'price', 'old_level',
+            'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
+            'accident_insurance', 'freeze_money', 'disposable_payment_discount',
+            'card_id', 'zmxy_score',
+
+            'disposable_payment_enabled', 'original_daily_rent', 'deposit',
+            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
+            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json',
+            'pay_type', 'merchant_id', 'channel', 'type', 'source',   #影响比较小的元素
+            'ip', 'order_type',    #可能有用但还不知道怎么用
+            'releted', ]   #丢弃相关数据
+
+df.head()
+df.info()
 df.describe()
 df.hist(bins=50, figsize=(20, 15))
-save_fig("attribute_histogram_plots")
-# plt.show()
+counter_scatter(df['cost'] / 100)
+counter_scatter(df['goods_name'], False)
+counter_scatter(df['goods_type'], False)
+
+counter_scatter(df['price'] / 100)
+plt.axis([0, 20000, 0, 4000])
+df.sort_values(by='price', inplace=True)
 
 # # Discover and visualize the data to gain insights
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,
@@ -254,6 +246,5 @@ corr_matrix["median_house_value"].sort_values(ascending=False)
 housing.plot(kind="scatter", x="rooms_per_household", y="median_house_value", alpha=0.2)
 plt.axis([0, 5, 0, 520000])
 plt.show()
-
 
 print("Missiong Complete!")

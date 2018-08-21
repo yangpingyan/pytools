@@ -55,6 +55,7 @@ print("Alldata for ML: {}".format(df.shape))
 # df = df[df['cost'] > 0]
 df.dropna(subset=['pay_num'], inplace=True)
 print("After handling data: {}".format(df.shape))
+# 去除续租订单
 
 # 特征处理
 # df['discount'].fillna(value=0, inplace=True)
@@ -80,7 +81,7 @@ y = df['check_result']
 x[features_number] = preprocessing.StandardScaler().fit_transform(x[features_number])
 
 ## Splitting the dataset into the Training set and Test set
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=0)
+x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_size=0.20, random_state=0)
 
 ## Feature Scaling
 # sc = StandardScaler()
@@ -88,16 +89,18 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random
 # X_test = sc.transform(X_test)
 
 ## Fitting SVM to the Training set
-classifier = SVC(kernel='rbf', random_state=0)
+classifier = svm.SVC(kernel='rbf', random_state=0)
 #feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
 classifier.fit(x_train, y_train)
 ## Predicting the Test set results
 y_pred = classifier.predict(x_test)
 
 ## Making the Confusion Matrix
-cm = confusion_matrix(y_test, y_pred)
+cm = metrics.confusion_matrix(y_test, y_pred)
 print(cm)
-print(cm / np.sum(cm, axis=1))
+print(metrics.precision_score(y_test, y_pred))
+print(metrics.recall_score(y_test, y_pred))
+# print(cm / np.sum(cm, axis=1))
 
 # y_train_pred = classifier.predict(x_train)
 # cm_train = confusion_matrix(y_train, y_train_pred)

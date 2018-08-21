@@ -7,6 +7,11 @@
 1）state字段中， user_canceled用户自己取消订单， 审核是否通过未知；
 2）state字段中， order_payment_overtime_canceled 代表支付超时取消， 已通过人工审核；
 3）state字段中， running_overdue 退还逾期， return_overdue归还预期，returning 退还中，pending_receive_goods 待收货，pending_pay 待支付；
+4) first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
+    first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
+    cost = first_pay （短租），
+    cost = 总租赁天数*每日租金（长租）
+
 
 标题字典
 学校用数据信审详情字典：
