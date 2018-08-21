@@ -43,17 +43,16 @@ df = df_alldata.dropna(axis=1, how='all')
 df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-features = ['goods_name', 'goods_type', 'price', 'old_level',
+features = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
             'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
-            'accident_insurance', 'freeze_money',
+            'accident_insurance', 'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
             'card_id', 'zmxy_score',
-            'delivery_way', 'source', 'disposable_payment_discount',
-            'disposable_payment_enabled', 'original_daily_rent', 'deposit',
-            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json',
-            'pay_type', 'merchant_id', 'channel', 'type',   #影响比较小的元素
-            'ip', 'order_type',    #可能有用但还不知道怎么用
-            'releted', ]   #丢弃相关数据
+            'phone_book', 'type.1', 'detail_json',
+            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relation',
+            'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
+            'ip', 'order_type',  # 可能有用但还不知道怎么用
+            'releted', ]  # 丢弃相关数据
 
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
@@ -79,7 +78,6 @@ print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
 df = df[df['check_remark'].str.contains('测试|内部员工') != True]
 print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
-
 
 # 去掉用户自己取消的数据
 df = df[df['state'].str.match('user_canceled') != True]
@@ -190,29 +188,25 @@ def counter_scatter(data, showpic=True):
         df_vc.plot(kind='scatter', x='value', y='counts', marker='.', alpha=0.4)
 
 
-features = ['goods_name', 'goods_type', 'price', 'old_level',
+features_ = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
             'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
-            'accident_insurance', 'freeze_money', 'disposable_payment_discount',
+            'accident_insurance', 'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
             'card_id', 'zmxy_score',
-
-            'disposable_payment_enabled', 'original_daily_rent', 'deposit',
-            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-            'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json',
-            'pay_type', 'merchant_id', 'channel', 'type', 'source',   #影响比较小的元素
-            'ip', 'order_type',    #可能有用但还不知道怎么用
-            'releted', ]   #丢弃相关数据
+            'phone_book', 'type.1', 'detail_json',
+            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name',
+            'emergency_contact_phone', 'emergency_contact_relation',
+            'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
+            'ip', 'order_type',  # 可能有用但还不知道怎么用
+            'releted', ]  # 丢弃相关数据
 
 df.head()
 df.info()
 df.describe()
 df.hist(bins=50, figsize=(20, 15))
-counter_scatter(df['cost'] / 100)
-counter_scatter(df['goods_name'], False)
-counter_scatter(df['goods_type'], False)
-
+counter_scatter(df['deposit'], False)
 counter_scatter(df['price'] / 100)
 plt.axis([0, 20000, 0, 4000])
-df.sort_values(by='price', inplace=True)
+
 
 # # Discover and visualize the data to gain insights
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,
