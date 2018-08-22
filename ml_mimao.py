@@ -2,79 +2,85 @@
 # -*- coding: utf-8 -*- 
 # @Time : 2018/8/14 16:30 
 # @Author : yangpingyan@gmail.com
-
-# Common imports
+# ML项目的完整流程
+# 1. 项目概述。
+# 2. 获取数据。
+# 3. 发现并可视化数据，发现规律。
+# 4. 为机器学习算法准备数据。
+# 5. 选择模型，进行训练。
+# 6. 微调模型。
+# 7. 给出解决方案。
+# 8. 部署、监控、维护系统。
 import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn import preprocessing, feature_selection, model_selection, metrics, svm
-
 import time
 import os
 
+# to make output display better
+pd.set_option('display.max_columns', 50)
+pd.set_option('display.max_rows', 20)
+pd.set_option('display.width', 1000)
+plt.rcParams['axes.labelsize'] = 14
+plt.rcParams['xtick.labelsize'] = 12
+plt.rcParams['ytick.labelsize'] = 12
+# read large csv file
+PROJECT_ROOT_DIR = os.getcwd()
+DATA_ID = "mibaodata_ml.csv"
+DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
 # discount 影响很大, 0.026, 0.762
-
 starttime = time.clock()
-
 print("Mission start")
-tmp = ['added_service', 'first_pay', 'channel',
-       'pay_type', 'merchant_id', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
-       'ip', 'releted', 'order_type', 'delivery_way', 'source',
-       'lease_num', 'original_daily_rent',
-       'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
-       'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json', 'price', 'old_level'
-       'goods_type']  # 最后一排特征对预测结果影响不明显
 
-csv.field_size_limit(100000000)
-df_ml = pd.read_csv("mibaodata_ml.csv", encoding='utf-8', engine='python')
-df = df_ml.drop_duplicates(subset=['card_id'], keep='last')
+tmp = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
+       'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num',
+       'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
+       'card_id', 'zmxy_score',  # 生成sex, age, zmf_score, xbf_score
+       'phone_book', 'phone',
+       'provice', 'city', 'regoin', 'type.1', 'detail_json', 'result',
+       'emergency_contact_phone', 'emergency_contact_relation',
+       'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
+       'ip', 'order_type', 'receive_address',  # 可能有用但还不知道怎么用
+       'releted', ]  # 丢弃相关数据
+
+df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
+df.fillna(value=0, inplace=True)
+
+features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
+features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money','zmf_score', 'xbf_score', ]
+df_num = df[features_number]
+df_discrete = df[features_cat]
+y = df['check_result']
 
 # 数据调试代码
 # df.sort_values(by=['phone_book'], inplace=True)
 # df[df['phone_book'].isnull()]
-# df['phone_book'].value_counts()
+# df['deposit'].value_counts()
+# df.info()
 
 
-features_label = ['zmf_score', 'xbf_score', 'sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
-features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money', ]
-#features_label = ['zmf_score', 'xbf_score', 'disposable_payment_discount']
-#features_number = [ 'discount' ]
-
-df = df[['check_result'] + features_label + features_number]
-print("Alldata for ML: {}".format(df.shape))
-
-# 过滤数据
-# df = df[df['zmf_score'] > 0][df['xbf_score'] > 0]
-# df = df[df['cost'] > 0]
-df.dropna(subset=['pay_num'], inplace=True)
-print("After handling data: {}".format(df.shape))
-# 去除续租订单
 
 # 特征处理
-# df['discount'].fillna(value=0, inplace=True)
-# df['disposable_payment_discount'].fillna(value=0, inplace=True)
-# df['deposit'].fillna(value=0, inplace=True)
-# df['freeze_money'].fillna(value=0, inplace=True)
-df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0)
-df.fillna(value=0, inplace=True)
-df['disposable_payment_discount'] = preprocessing.LabelEncoder().fit_transform(df['disposable_payment_discount'])
+for feature in features_cat:
+    df[feature] = preprocessing.LabelEncoder().fit_transform(df[feature])
 
 ## Importing the dataset
-x = df[features_label + features_number]
-y = df['check_result']
+x = df[features_cat + features_number]
+
 
 ## Handling the missing data
 # x = preprocessing.Imputer(missing_values="NaN", strategy="mean", axis=0).fit_transform(x)
 
-## Encoding Categorical data
-
-# x = preprocessing.OneHotEncoder(categorical_features='all').fit_transform(x).toarray()
-
 ## Feature Scaling
 x[features_number] = preprocessing.StandardScaler().fit_transform(x[features_number])
+
+## Encoding Categorical data
+# x = preprocessing.OneHotEncoder(categorical_features=np.array([0,1,2,3,4,5])).fit_transform(x).toarray()
+
 
 ## Splitting the dataset into the Training set and Test set
 x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_size=0.20, random_state=0)
@@ -86,16 +92,16 @@ x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_s
 
 ## Fitting SVM to the Training set
 classifier = svm.SVC(kernel='rbf', random_state=0)
-#feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
+# feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
 classifier.fit(x_train, y_train)
 ## Predicting the Test set results
 y_pred = classifier.predict(x_test)
-
+print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_test, y_pred))))
 ## Making the Confusion Matrix
 cm = metrics.confusion_matrix(y_test, y_pred)
 print(cm)
-print(metrics.precision_score(y_test, y_pred))
-print(metrics.recall_score(y_test, y_pred))
+print("percision score:{:.3f}".format(metrics.precision_score(y_test, y_pred))) #0.930
+print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))    #0.706
 # print(cm / np.sum(cm, axis=1))
 
 # y_train_pred = classifier.predict(x_train)
@@ -120,6 +126,5 @@ print(metrics.recall_score(y_test, y_pred))
 # plt.legend()
 # plt.show()
 
-endtime = time.clock()
-print(endtime)
-print("ML mission complete! {:.2f}S".format((endtime-starttime)))
+
+print("ML mission complete! {:.2f}S".format((time.clock() - starttime)))

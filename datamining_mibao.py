@@ -2,17 +2,6 @@
 # -*- coding: utf-8 -*- 
 # @Time : 2018/8/20 17:48
 # @Author : yangpingyan@gmail.com
-
-# ML项目的完整流程
-# 1. 项目概述。
-# 2. 获取数据。
-# 3. 发现并可视化数据，发现规律。
-# 4. 为机器学习算法准备数据。
-# 5. 选择模型，进行训练。
-# 6. 微调模型。
-# 7. 给出解决方案。
-# 8. 部署、监控、维护系统。
-
 import csv
 import pandas as pd
 import numpy as np
@@ -88,6 +77,12 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].map(lambda x: 1 if 'SUCCESS' in x else 0)
+# 去除续租订单
+df = df[df['releted'] == 0]
+print("去除续租后的数据量: {}".format(df.shape))
+# 保留同一个人租赁的最后一个订单
+df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
+print("去除同一个人多次订单后的数据量: {}".format(df.shape))
 
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
@@ -151,28 +146,35 @@ df['check_result'] = df['check_result'].map(lambda x: 1 if 'SUCCESS' in x else 0
 
 # 处理芝麻信用分 '>600' 更改成600
 row = 0
-zmf = [0] * len(df)
-xbf = [0] * len(df)
+zmf = [None] * len(df)
+xbf = [None] * len(df)
 for x in df['zmxy_score']:
     # print(x, row)
     if isinstance(x, str):
         if '/' in x:
             score = x.split('/')
-            xbf[row] = 0 if score[0] == '' else int(float(score[0]) / 10)
-            zmf[row] = 0 if score[1] == '' else int(float(score[1]) / 100)
+            xbf[row] = 0 if score[0] == '' else (float(score[0]) )
+            zmf[row] = 0 if score[1] == '' else (float(score[1]) )
             # print(score, row)
         elif '>' in x:
-            zmf[row] = 6
+            zmf[row] = 600
         else:
             score = float(x)
             if score <= 200:
-                xbf[row] = int(score / 10)
+                xbf[row] = (score )
             else:
-                zmf[row] = int(score / 100)
+                zmf[row] = (score )
 
     row += 1
+
 df['zmf_score'] = zmf
+zmf_median = df['zmf_score'].median()
+df['zmf_score'].fillna(value=zmf_median, inplace=True)
+df['zmf_score'][df['zmf_score'] == 0] = zmf_median
 df['xbf_score'] = xbf
+xbf_median = df['xbf_score'].median()
+df['xbf_score'].fillna(value=xbf_median, inplace=True)
+df['xbf_score'][df['xbf_score'] == 0] = xbf_median
 
 # 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
@@ -184,12 +186,9 @@ df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0
 df['phone'] = df['phone'].map(lambda x: x[0:3])
 # 处理price, 大于3000000 赋值成3万
 df['price'].where(df['price'] < 3000000, 3000000, inplace=True)
-# 去除续租订单
-df = df[df['releted'] == 0]
+
 # 计算保险和意外险费用
 
-# 所有空值赋值成0
-df.fillna(value=0, inplace=True)
 
 df.drop(labels=['zmxy_score', 'card_id', 'releted'], axis=1, inplace=True, errors='ignore')
 # 暂时去除
