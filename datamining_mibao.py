@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import time
 import os
+from sklearn import preprocessing
+from timeit import timeit
 
 # to make output display better
 pd.set_option('display.max_columns', 50)
@@ -40,21 +42,21 @@ print("原始数据量: {}".format(df_alldata.shape))
 
 df = df_alldata.dropna(axis=1, how='all')
 # 处理身份证号
-df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
+df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
 features = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
-            'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
-            'accident_insurance', 'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
-            'card_id', 'zmxy_score', # 生成sex, age, zmf_score, xbf_score
+            'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num',
+            'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
+            'card_id', 'zmxy_score',  # 生成sex, age, zmf_score, xbf_score
             'phone_book', 'phone',
-            'provice', 'city', 'regoin', 'type.1', 'detail_json',
+            'provice', 'city', 'regoin', 'type.1', 'detail_json', 'result',
             'emergency_contact_phone', 'emergency_contact_relation',
-            'pay_type', 'merchant_id', 'channel', 'type', 'source', # 影响比较小的元素
-            'ip', 'order_type', 'receive_address', # 可能有用但还不知道怎么用
+            'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
+            'ip', 'order_type', 'receive_address',  # 可能有用但还不知道怎么用
             'releted', ]  # 丢弃相关数据
 
-result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
+result = ['state', 'cancel_reason', 'check_result', 'check_remark']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
@@ -85,24 +87,24 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
-df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
+df['check_result'] = df['check_result'].map(lambda x: 1 if 'SUCCESS' in x else 0)
 
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 处理detail_json
 # detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
 # for col in detail_cols:
-#     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
+#     df[col] = df['detail_json'].map(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
 #
 # detail_cols = ['INFOANALYSIS', 'RENT']
 # for col in detail_cols:
-#     df[col] = df['result_desc'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+#     df[col] = df['result_desc'].map(lambda x: x.get(col) if isinstance(x, dict) else None)
 # detail_cols = ['geotrueip_info', 'device_info', 'address_detect', 'geoip_info']
 # for col in detail_cols:
-#     df[col] = df['INFOANALYSIS'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+#     df[col] = df['INFOANALYSIS'].map(lambda x: x.get(col) if isinstance(x, dict) else None)
 # detail_cols = ['risk_items', 'final_score', 'final_decision']
 # for col in detail_cols:
-#     df[col] = df['RENT'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
+#     df[col] = df['RENT'].map(lambda x: x.get(col) if isinstance(x, dict) else None)
 #
 # df.drop(['result_desc', 'INFOANALYSIS', 'RENT'], axis=1, errors='ignore', inplace=True)
 #
@@ -180,8 +182,28 @@ df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0)
 # 处理phone_book, 只判断是否有phone book
 df['phone'] = df['phone'].map(lambda x: x[0:3])
+# 处理price, 大于3000000 赋值成3万
+df['price'].where(df['price'] < 3000000, 3000000, inplace=True)
+# 去除续租订单
+df = df[df['releted'] == 0]
+# 计算保险和意外险费用
 
-# df.to_csv("mibaodata_ml.csv", index=False)
+# 所有空值赋值成0
+df.fillna(value=0, inplace=True)
+
+df.drop(labels=['zmxy_score', 'card_id', 'releted'], axis=1, inplace=True, errors='ignore')
+# 暂时去除
+features_drop = ['goods_name', 'goods_type',
+                 'provice', 'city', 'regoin', 'type.1', 'detail_json',
+                 'result', 'emergency_contact_phone',
+                 'emergency_contact_relation',
+                 'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
+                 'ip', 'order_type', 'receive_address',  # 可能有用但还不知道怎么用
+                 'state', 'cancel_reason', 'check_remark',]  # 丢弃相关数据
+df.drop(labels=features_drop, axis=1, inplace=True, errors='ignore')
+print("数据清理后的数据量: {}".format(df.shape))
+SAVE_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv")
+df.to_csv(SAVE_PATH, index=False)
 
 # analyze data
 def counter_scatter(data, showpic=True):
@@ -192,18 +214,16 @@ def counter_scatter(data, showpic=True):
         df_vc.plot(kind='scatter', x='value', y='counts', marker='.', alpha=0.4)
 
 
-
-
 df.head()
 df.info()
 df.describe()
 df.hist(bins=50, figsize=(20, 15))
-counter_scatter(df['goods_type'], False)
-counter_scatter(df['freeze_money'])
+counter_scatter(df['deposit'], False)
+counter_scatter(df['phone_book'])
 counter_scatter(df['price'] / 100)
 plt.axis([0, 20000, 0, 4000])
-df[['emergency_contact_phone', 'phone_book']].info()
-#emergency_contact_phone, phone_book 这些数据只有7000个左右， 有缺失？？？？？
+df[['deposit', 'phone_book']].info()
+# emergency_contact_phone, phone_book 这些数据只有7000个左右， 有缺失？？？？？
 df.sort_values(by='price', inplace=True, ascending=False)
 # # Discover and visualize the data to gain insights
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,

@@ -9,12 +9,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-from sklearn import metrics
-from sklearn import feature_selection
-from sklearn import preprocessing
-from sklearn import model_selection
-from sklearn import svm
-from sklearn import metrics
+from sklearn import preprocessing, feature_selection, model_selection, metrics, svm
+
 import time
 import os
 
