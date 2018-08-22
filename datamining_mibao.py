@@ -46,12 +46,12 @@ df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if i
 features = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
             'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
             'accident_insurance', 'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
-            'card_id', 'zmxy_score',
-            'phone_book', 'type.1', 'detail_json',
-            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name',
+            'card_id', 'zmxy_score', # 生成sex, age, zmf_score, xbf_score
+            'phone_book', 'phone',
+            'provice', 'city', 'regoin', 'type.1', 'detail_json',
             'emergency_contact_phone', 'emergency_contact_relation',
-            'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
-            'ip', 'order_type',  # 可能有用但还不知道怎么用
+            'pay_type', 'merchant_id', 'channel', 'type', 'source', # 影响比较小的元素
+            'ip', 'order_type', 'receive_address', # 可能有用但还不知道怎么用
             'releted', ]  # 丢弃相关数据
 
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
@@ -176,6 +176,10 @@ df['xbf_score'] = xbf
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
+# 处理phone_book, 只判断是否有phone book
+df['phone_book'] = df['phone_book'].map(lambda x: 1 if isinstance(x, str) else 0)
+# 处理phone_book, 只判断是否有phone book
+df['phone'] = df['phone'].map(lambda x: x[0:3])
 
 # df.to_csv("mibaodata_ml.csv", index=False)
 
@@ -188,26 +192,19 @@ def counter_scatter(data, showpic=True):
         df_vc.plot(kind='scatter', x='value', y='counts', marker='.', alpha=0.4)
 
 
-features_ = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
-            'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num', 'added_service',
-            'accident_insurance', 'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
-            'card_id', 'zmxy_score',
-            'phone_book', 'type.1', 'detail_json',
-            'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name',
-            'emergency_contact_phone', 'emergency_contact_relation',
-            'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
-            'ip', 'order_type',  # 可能有用但还不知道怎么用
-            'releted', ]  # 丢弃相关数据
+
 
 df.head()
 df.info()
 df.describe()
 df.hist(bins=50, figsize=(20, 15))
-counter_scatter(df['deposit'], False)
+counter_scatter(df['goods_type'], False)
+counter_scatter(df['freeze_money'])
 counter_scatter(df['price'] / 100)
 plt.axis([0, 20000, 0, 4000])
-
-
+df[['emergency_contact_phone', 'phone_book']].info()
+#emergency_contact_phone, phone_book 这些数据只有7000个左右， 有缺失？？？？？
+df.sort_values(by='price', inplace=True, ascending=False)
 # # Discover and visualize the data to gain insights
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,
              s=housing["population"] / 100, label="population", figsize=(10, 7),
@@ -216,17 +213,17 @@ housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.4,
 plt.legend()
 # save_fig("housing_prices_scatterplot")
 
-corr_matrix = housing.corr()
-corr_matrix["median_house_value"].sort_values(ascending=False)
+corr_matrix = df.corr()
+corr_matrix["check_result"].sort_values(ascending=False)
 
 from pandas.plotting import scatter_matrix
 
-attributes = ["median_house_value", "median_income", "total_rooms",
-              "housing_median_age"]
-scatter_matrix(housing[attributes], figsize=(12, 8))
+attributes = ["check_result", "freeze_money", "phone_book",
+              "zmf_score"]
+scatter_matrix(df[attributes], figsize=(12, 8))
 # save_fig("scatter_matrix_plot")
 
-housing.plot(kind="scatter", x="median_income", y="median_house_value", alpha=0.1)
+df.plot(kind="scatter", x="median_income", y="median_house_value", alpha=0.1)
 plt.axis([0, 16, 0, 550000])
 # save_fig("income_vs_house_value_scatterplot")
 
