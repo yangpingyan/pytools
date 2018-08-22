@@ -398,6 +398,7 @@ cvres = rnd_search.cv_results_
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
 
+# 分析最佳模型和它们的误差
 feature_importances = grid_search.best_estimator_.feature_importances_
 feature_importances
 
@@ -408,6 +409,7 @@ cat_one_hot_attribs = list(cat_encoder.categories_[0])
 attributes = num_attribs + extra_attribs + cat_one_hot_attribs
 sorted(zip(feature_importances, attributes), reverse=True)
 
+# 用测试集评估系统
 final_model = grid_search.best_estimator_
 
 X_test = strat_test_set.drop("median_house_value", axis=1)
@@ -423,7 +425,7 @@ final_rmse
 
 # We can compute a 95% confidence interval for the test RMSE:
 
-
+# homework
 from scipy import stats
 
 confidence = 0.95

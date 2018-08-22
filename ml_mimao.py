@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn import preprocessing, feature_selection, model_selection, metrics, svm
+from sklearn.tree import DecisionTreeClassifier
 import time
 import os
 
@@ -51,7 +52,7 @@ df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 df.fillna(value=0, inplace=True)
 
 features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
-features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money','zmf_score', 'xbf_score', ]
+features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', ]
 df_num = df[features_number]
 df_discrete = df[features_cat]
 y = df['check_result']
@@ -63,14 +64,12 @@ y = df['check_result']
 # df.info()
 
 
-
 # 特征处理
 for feature in features_cat:
     df[feature] = preprocessing.LabelEncoder().fit_transform(df[feature])
 
 ## Importing the dataset
 x = df[features_cat + features_number]
-
 
 ## Handling the missing data
 # x = preprocessing.Imputer(missing_values="NaN", strategy="mean", axis=0).fit_transform(x)
@@ -90,20 +89,25 @@ x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_s
 # X_train = sc.fit_transform(X_train)
 # X_test = sc.transform(X_test)
 
+from sklearn.ensemble import RandomForestClassifier
+
 ## Fitting SVM to the Training set
-classifier = svm.SVC(kernel='rbf', random_state=0)
+# classifier = svm.SVC(kernel='rbf', random_state=0)
+classifier = RandomForestClassifier()
 # feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
 classifier.fit(x_train, y_train)
-## Predicting the Test set results
-y_pred = classifier.predict(x_test)
-print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_test, y_pred))))
-## Making the Confusion Matrix
-cm = metrics.confusion_matrix(y_test, y_pred)
-print(cm)
-print("percision score:{:.3f}".format(metrics.precision_score(y_test, y_pred))) #0.930
-print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))    #0.706
-# print(cm / np.sum(cm, axis=1))
 
+y_pred = classifier.predict(x_train)
+scores = model_selection.cross_val_score(classifier, x_train, y_train, scoring="neg_mean_squared_error", cv=10)
+print(scores)
+## Making the Confusion Matrix
+cm = metrics.confusion_matrix(y_train, y_pred)
+print(cm)
+print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_pred))))
+print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_pred)))  # 0.930
+print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_pred)))  # 0.706
+# print(cm / np.sum(cm, axis=1))
+exit(0)
 # y_train_pred = classifier.predict(x_train)
 # cm_train = confusion_matrix(y_train, y_train_pred)
 
@@ -126,5 +130,85 @@ print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))    #0.
 # plt.legend()
 # plt.show()
 
+# 模型微调，寻找最佳超参数
+# 网格搜索
+from sklearn.model_selection import GridSearchCV
+
+param_grid = [
+    # try 12 (3×4) combinations of hyperparameters
+    {'n_estimators': [3, 10, 30], 'max_features': [2, 4, 6, 8]},
+    # then try 6 (2×3) combinations with bootstrap set as False
+    {'bootstrap': [False], 'n_estimators': [3, 10], 'max_features': [2, 3, 4]},
+]
+forest_reg = RandomForestRegressor(random_state=42)
+# train across 5 folds, that's a total of (12+6)*5=90 rounds of training
+grid_search = GridSearchCV(forest_reg, param_grid, cv=5,
+                           scoring='neg_mean_squared_error', return_train_score=True)
+grid_search.fit(housing_prepared, housing_labels)
+
+# The best hyperparameter combination found:
+grid_search.best_params_
+grid_search.best_estimator_
+
+# Let's look at the score of each hyperparameter combination tested during the grid search:
+cvres = grid_search.cv_results_
+for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
+    print(np.sqrt(-mean_score), params)
+pd.DataFrame(grid_search.cv_results_)
+
+# 模型微调-随机搜索
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint
+
+param_distribs = {
+    'n_estimators': randint(low=1, high=200),
+    'max_features': randint(low=1, high=8),
+}
+forest_reg = RandomForestRegressor(random_state=42)
+rnd_search = RandomizedSearchCV(forest_reg, param_distributions=param_distribs,
+                                n_iter=10, cv=5, scoring='neg_mean_squared_error', random_state=42)
+rnd_search.fit(housing_prepared, housing_labels)
+
+cvres = rnd_search.cv_results_
+for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
+    print(np.sqrt(-mean_score), params)
+
+
+
+# 分析最佳模型和它们的误差
+feature_importances = grid_search.best_estimator_.feature_importances_
+feature_importances
+
+extra_attribs = ["rooms_per_hhold", "pop_per_hhold", "bedrooms_per_room"]
+# cat_encoder = cat_pipeline.named_steps["cat_encoder"] # old solution
+cat_encoder = full_pipeline.named_transformers_["cat"]
+cat_one_hot_attribs = list(cat_encoder.categories_[0])
+attributes = num_attribs + extra_attribs + cat_one_hot_attribs
+sorted(zip(feature_importances, attributes), reverse=True)
+
+
+# 用测试集评估系统
+final_model = grid_search.best_estimator_
+
+X_test = strat_test_set.drop("median_house_value", axis=1)
+y_test = strat_test_set["median_house_value"].copy()
+
+X_test_prepared = full_pipeline.transform(X_test)
+final_predictions = final_model.predict(X_test_prepared)
+
+final_mse = mean_squared_error(y_test, final_predictions)
+final_rmse = np.sqrt(final_mse)
+
+final_rmse
+
+# 模型保存于加载
+from sklearn.externals import joblib
+joblib.dump(my_model, "my_model.pkl")
+my_model_loaded = joblib.load("my_model.pkl")
+
 
 print("ML mission complete! {:.2f}S".format((time.clock() - starttime)))
+
+# 然后就是项目的预上线阶段：你需要展示你的方案（重点说明学到了什么、做了什么、没做
+# 什么、做过什么假设、系统的限制是什么，等等），记录下所有事情，用漂亮的图表和容易
+# 记住的表达（比如，“收入中位数是房价最重要的预测量”）做一次精彩的展示。
