@@ -205,6 +205,7 @@ print("数据清理后的数据量: {}".format(df.shape))
 SAVE_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv")
 df.to_csv(SAVE_PATH, index=False)
 
+exit(0)
 # analyze data
 def counter_scatter(data, showpic=True):
     vc = data.value_counts()
