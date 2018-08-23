@@ -232,6 +232,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
         else:
             return np.c_[X, rooms_per_household, population_per_household]
 
+
 # Now let's build a pipeline for preprocessing the numerical attributes:
 num_pipeline = pipeline.Pipeline([
     ('imputer', preprocessing.Imputer(strategy="median")),
@@ -456,7 +457,7 @@ np.sqrt(mean - zmargin), np.sqrt(mean + zmargin)
 # ## A full pipeline with both preparation and prediction
 
 
-full_pipeline_with_predictor = Pipeline([
+full_pipeline_with_predictor = pipeline.Pipeline([
     ("preparation", full_pipeline),
     ("linear", LinearRegression())
 ])

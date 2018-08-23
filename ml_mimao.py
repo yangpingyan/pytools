@@ -107,6 +107,7 @@ print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_er
 print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_pred)))  # 0.930
 print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_pred)))  # 0.706
 # print(cm / np.sum(cm, axis=1))
+print("ML mission complete! {:.2f}S".format((time.clock() - starttime)))
 exit(0)
 # y_train_pred = classifier.predict(x_train)
 # cm_train = confusion_matrix(y_train, y_train_pred)
@@ -207,7 +208,7 @@ joblib.dump(my_model, "my_model.pkl")
 my_model_loaded = joblib.load("my_model.pkl")
 
 
-print("ML mission complete! {:.2f}S".format((time.clock() - starttime)))
+
 
 # 然后就是项目的预上线阶段：你需要展示你的方案（重点说明学到了什么、做了什么、没做
 # 什么、做过什么假设、系统的限制是什么，等等），记录下所有事情，用漂亮的图表和容易
