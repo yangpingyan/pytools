@@ -92,14 +92,25 @@ x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_s
 from sklearn.ensemble import RandomForestClassifier
 
 ## Fitting SVM to the Training set
-# classifier = svm.SVC(kernel='rbf', random_state=0)
-classifier = RandomForestClassifier()
-# feature_selection.RFE(estimator=classifier, n_features_to_select=2).fit_transform(x_train, y_train)
-classifier.fit(x_train, y_train)
+svm_clf = svm.SVC()
+svm_clf.fit(x_train, y_train)
+y_pred = svm_clf.predict(x_test)
+cm = metrics.confusion_matrix(y_test, y_pred)
+print(cm)
+print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_test, y_pred))))
+print("percision score:{:.3f}".format(metrics.precision_score(y_test, y_pred)))  # 0.930
+print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))  # 0.706
+print("SVC ML mission complete! {:.2f}S".format((time.clock() - starttime)))
 
-y_pred = classifier.predict(x_train)
-scores = model_selection.cross_val_score(classifier, x_train, y_train, scoring="neg_mean_squared_error", cv=10)
-print(scores)
+svm_scores = model_selection.cross_val_score(svm_clf, x_train, y_train, cv=10)
+print(svm_scores.mean())
+
+
+forest_clf = RandomForestClassifier()
+forest_scores = model_selection.cross_val_score(forest_clf, x_train, y_train, cv=10)
+print(forest_scores.mean())
+
+
 ## Making the Confusion Matrix
 cm = metrics.confusion_matrix(y_train, y_pred)
 print(cm)

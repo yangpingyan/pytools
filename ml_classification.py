@@ -21,6 +21,13 @@ PROJECT_ROOT_DIR = "."
 CHAPTER_ID = "classification"
 
 
+def plot_digit(data):
+    image = data.reshape(28, 28)
+    plt.imshow(image, cmap = matplotlib.cm.binary,
+               interpolation="nearest")
+    plt.axis("off")
+
+
 def save_fig(fig_id, tight_layout=True):
     path = os.path.join(PROJECT_ROOT_DIR, "images", CHAPTER_ID, fig_id + ".png")
     print("Saving figure", fig_id)
@@ -214,28 +221,7 @@ save_fig("confusion_matrix_errors_plot", tight_layout=False)
 plt.show()
 
 
-cl_a, cl_b = 3, 5
-X_aa = X_train[(y_train == cl_a) & (y_train_pred == cl_a)]
-X_ab = X_train[(y_train == cl_a) & (y_train_pred == cl_b)]
-X_ba = X_train[(y_train == cl_b) & (y_train_pred == cl_a)]
-X_bb = X_train[(y_train == cl_b) & (y_train_pred == cl_b)]
-
-plt.figure(figsize=(8, 8))
-plt.subplot(221);
-plot_digits(X_aa[:25], images_per_row=5)
-plt.subplot(222);
-plot_digits(X_ab[:25], images_per_row=5)
-plt.subplot(223);
-plot_digits(X_ba[:25], images_per_row=5)
-plt.subplot(224);
-plot_digits(X_bb[:25], images_per_row=5)
-save_fig("error_analysis_digits_plot")
-plt.show()
-
 # # Multilabel classification
-
-# In[70]:
-
 
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -245,57 +231,14 @@ y_multilabel = np.c_[y_train_large, y_train_odd]
 
 knn_clf = KNeighborsClassifier()
 knn_clf.fit(X_train, y_multilabel)
-
-# In[71]:
-
-
 knn_clf.predict([some_digit])
-
-# **Warning**: the following cell may take a very long time (possibly hours depending on your hardware).
-
-# In[72]:
-
-
 y_train_knn_pred = cross_val_predict(knn_clf, X_train, y_multilabel, cv=3, n_jobs=-1)
 f1_score(y_multilabel, y_train_knn_pred, average="macro")
 
-# # Multioutput classification
-
-# In[73]:
 
 
-noise = np.random.randint(0, 100, (len(X_train), 784))
-X_train_mod = X_train + noise
-noise = np.random.randint(0, 100, (len(X_test), 784))
-X_test_mod = X_test + noise
-y_train_mod = X_train
-y_test_mod = X_test
-
-# In[74]:
-
-
-some_index = 5500
-plt.subplot(121);
-plot_digit(X_test_mod[some_index])
-plt.subplot(122);
-plot_digit(y_test_mod[some_index])
-save_fig("noisy_digit_example_plot")
-plt.show()
-
-# In[75]:
-
-
-knn_clf.fit(X_train_mod, y_train_mod)
-clean_digit = knn_clf.predict([X_test_mod[some_index]])
-plot_digit(clean_digit)
-save_fig("cleaned_digit_example_plot")
 
 # # Extra material
-
-# ## Dummy (ie. random) classifier
-
-# In[76]:
-
 
 from sklearn.dummy import DummyClassifier
 
@@ -303,15 +246,8 @@ dmy_clf = DummyClassifier()
 y_probas_dmy = cross_val_predict(dmy_clf, X_train, y_train_5, cv=3, method="predict_proba")
 y_scores_dmy = y_probas_dmy[:, 1]
 
-# In[77]:
-
-
 fprr, tprr, thresholdsr = roc_curve(y_train_5, y_scores_dmy)
 plot_roc_curve(fprr, tprr)
-
-# ## KNN classifier
-
-# In[78]:
 
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -319,20 +255,11 @@ from sklearn.neighbors import KNeighborsClassifier
 knn_clf = KNeighborsClassifier(n_jobs=-1, weights='distance', n_neighbors=4)
 knn_clf.fit(X_train, y_train)
 
-# In[79]:
-
-
 y_knn_pred = knn_clf.predict(X_test)
-
-# In[80]:
-
 
 from sklearn.metrics import accuracy_score
 
 accuracy_score(y_test, y_knn_pred)
-
-# In[81]:
-
 
 from scipy.ndimage.interpolation import shift
 
@@ -342,8 +269,6 @@ def shift_digit(digit_array, dx, dy, new=0):
 
 
 plot_digit(shift_digit(some_digit, 5, 1, new=100))
-
-# In[82]:
 
 
 X_train_expanded = [X_train]
@@ -356,9 +281,6 @@ for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
 X_train_expanded = np.concatenate(X_train_expanded)
 y_train_expanded = np.concatenate(y_train_expanded)
 X_train_expanded.shape, y_train_expanded.shape
-
-# In[83]:
-
 
 knn_clf.fit(X_train_expanded, y_train_expanded)
 
