@@ -14,6 +14,8 @@
 # 8. 部署、监控、维护系统。
 
 import csv
+import json
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -82,25 +84,41 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
-
+# 根据create_time 按时间段分类
+df.sort_values(by=['phone_book'], inplace=True)
+df[df['phone_book'].isnull()]
+df['deposit'].value_counts()
+df[['create_time', 'create_hour', 'check_result']].info()
+df['create_time']
+df['create_hour'] = df['create_time'].map(lambda x: int(x[-8:-6]))
+dft = df[df['check_result'] == 1]
+dft['create_hour'].value_counts()
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 处理detail_json
+#展开detail_json中所有的字典
 def expand_dict(dict_in):
     dict_out = dict()
     for k, v in dict_in.items():
+        # print(k, v)
         if isinstance(v, dict):
             dict_out.update(expand_dict(v))
+        elif isinstance(v, list):
+            for d in v:
+                if isinstance(d, dict):
+                    dict_out.update(expand_dict(d))
+                else:
+                    dict_out[k] = v
         else:
             dict_out[k] = v
     return dict_out
 
-dict_in = dict({1: 1, 2: {21:21, 22:22}})
-dict_out = expand_dict(dict_in)
-for k,v in dict_out.items():
-    print(k,v)
+dict_out = dict()
+for val in df['detail_json']:
+    if(isinstance(val, str)):
+        dict_out.update(expand_dict(json.loads(val)))
 
-# detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
+detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_type_display_name', 'fraud_type_display_name', 'evidence_time', 'risk_level', 'fraud_type', 'value', 'type', 'data', 'detail', 'count', 'dimension', 'platform_count', 'final_decision', 'discredit_times', 'overdue_time', 'overdue_amount_range', 'fuzzy_id_number', 'fuzzy_name', 'overdue_day_range', 'high_risk_areas', 'hit_list_datas', 'overdue_count', 'execute_subject', 'execute_court', 'case_code', 'executed_name', 'case_date', 'evidence_court', 'execute_status', 'term_duty', 'gender', 'carry_out', 'execute_code', 'province', 'specific_circumstances', 'age', 'finalDecision', 'finalScore', 'memo', 'ruleId', 'ruleName', 'template', 'riskType', 'strategyMode', 'strategyName', 'strategyScore', 'firstType', 'grade', 'secondType', 'name', 'rejectValue', 'reviewValue', 'true_ip_address', 'mobile_address', 'id_card_address', 'isp', 'latitude', 'position', 'longitude', 'error', 'proxyProtocol', 'port', 'proxyType']
 # for col in detail_cols:
 #     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
 #

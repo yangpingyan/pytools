@@ -56,7 +56,7 @@ df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 df.fillna(value=0, inplace=True)
 
 features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
-features_number = ['cost', 'age', 'discount', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', ]
+features_number = ['cost', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', ]
 df_num = df[features_number]
 df_discrete = df[features_cat]
 y = df['check_result']
