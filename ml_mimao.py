@@ -94,24 +94,24 @@ x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_s
 # X_test = sc.transform(X_test)
 
 ## Fitting SVM to the Training set
-svm_clf = svm.SVC()
+svm_clf = SVC()
 svm_clf.fit(x_train, y_train)
 y_train_pred = svm_clf.predict(x_train)
 cm = metrics.confusion_matrix(y_train, y_train_pred)
 print(cm)
 print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
+print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
 print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
 print("SVC ML mission complete! {:.2f}S".format((time.clock() - starttime)))
 
 print("SVC:")
 starttime = time.clock()
-svm_clf = svm.SVC()
+svm_clf = SVC()
 y_train_pred = model_selection.cross_val_predict(svm_clf, x_train, y_train, cv=10)
 cm = metrics.confusion_matrix(y_train, y_train_pred)
 print(cm)
 print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
+print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
 print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
 print("SVC ML mission complete! {:.2f}S".format((time.clock() - starttime)))
 
@@ -122,9 +122,12 @@ y_train_pred = model_selection.cross_val_predict(forest_clf, x_train, y_train, c
 cm = metrics.confusion_matrix(y_train, y_train_pred)
 print(cm)
 print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
+print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
 print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
 print("RandomForestClassifier ML mission complete! {:.2f}S".format((time.clock() - starttime)))
+forest_clf.fit(x_train, y_train)
+for name, score in zip(x.columns.tolist(), forest_clf.feature_importances_):
+    print(name, score)
 
 print("DecisionTreeClassifier:")
 starttime = time.clock()
@@ -134,7 +137,7 @@ y_train_pred = model_selection.cross_val_predict(tree_clf, x_train, y_train, cv=
 cm = metrics.confusion_matrix(y_train, y_train_pred)
 print(cm)
 print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("percision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
+print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
 print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
 print("DecisionTreeClassifier ML mission complete! {:.2f}S".format((time.clock() - starttime)))
 
@@ -152,7 +155,7 @@ for clf in (log_clf, rnd_clf, svm_clf):
     print(cm)
     print("{} run time {:.3f}".format(clf.__class__.__name__,endtime-starttime))
     print("accuracy score:{:.3f}".format(metrics.accuracy_score(y_test, y_pred)))
-    print("percision score:{:.3f}".format(metrics.precision_score(y_test, y_pred)))
+    print("precision score:{:.3f}".format(metrics.precision_score(y_test, y_pred)))
     print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))
     print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_test, y_pred))))
 

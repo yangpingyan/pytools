@@ -33,7 +33,7 @@ csv.field_size_limit(100000000)
 
 # Datasets info
 PROJECT_ROOT_DIR = os.getcwd()
-DATA_ID = "学校测试所需数据.csv"
+DATA_ID = "学校数据.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 
@@ -82,9 +82,24 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
+
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 处理detail_json
+def expand_dict(dict_in):
+    dict_out = dict()
+    for k, v in dict_in.items():
+        if isinstance(v, dict):
+            dict_out.update(expand_dict(v))
+        else:
+            dict_out[k] = v
+    return dict_out
+
+dict_in = dict({1: 1, 2: {21:21, 22:22}})
+dict_out = expand_dict(dict_in)
+for k,v in dict_out.items():
+    print(k,v)
+
 # detail_cols = ['strategySet', 'finalScore', 'success', 'result_desc', 'finalDecision']
 # for col in detail_cols:
 #     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
@@ -174,20 +189,19 @@ df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 # df.sort_values(by=['merchant_id'], inplace=True)
 
 df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
-df = df[df['xbf_score']>0]
-df = df[df['zmf_score']>0]
+df = df[df['xbf_score'] > 0]
+df = df[df['zmf_score'] > 0]
 df.to_csv("mibaodata_ml.csv", index=False)
 df.head()
 df.info()
 df.describe()
 df.hist(bins=50, figsize=(20, 15))
 
-
 # # Discover and visualize the data to gain insights
 df.plot(kind="scatter", x="zmf_score", y="xbf_score", alpha=0.4,
-             s=df["check_result"] , label="check_result", figsize=(10, 7),
-             c="check_result", cmap=plt.get_cmap("jet"), colorbar=True,
-             sharex=False)
+        s=df["check_result"], label="check_result", figsize=(10, 7),
+        c="check_result", cmap=plt.get_cmap("jet"), colorbar=True,
+        sharex=False)
 plt.legend()
 
 corr_matrix = df.corr()
