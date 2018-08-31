@@ -25,3 +25,4 @@ tensorflow
 keras
 scikit-learn
 autokeras
+ipython

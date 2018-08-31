@@ -25,6 +25,8 @@ from sklearn.svm import SVC
 import time
 import os
 
+# discount 影响很大, 0.026, 0.762
+starttime = time.clock()
 # to make output display better
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.max_rows', 20)
@@ -37,8 +39,6 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-# discount 影响很大, 0.026, 0.762
-starttime = time.clock()
 print("Mission start")
 
 tmp = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
