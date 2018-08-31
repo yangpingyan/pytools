@@ -21,11 +21,10 @@ from matplotlib.colors import ListedColormap
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
-from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_predict
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.model_selection import cross_val_predict, train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.metrics import precision_recall_curve, precision_score, recall_score, f1_score
@@ -46,132 +45,61 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-# to make this notebook's output stable across runs
-np.random.seed(42)
+from sklearn.datasets import make_moons
 
-from sklearn.datasets import fetch_mldata
+X, y = make_moons(n_samples=500, noise=0.30)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+# plt.plot(X[:, 0][y == 0], X[:, 1][y == 0], "yo", alpha=0.4)
+# plt.plot(X[:, 0][y == 1], X[:, 1][y == 1], "bs", alpha=0.4)
 
-mnist = fetch_mldata('MNIST original')
-X, y = mnist["data"], mnist["target"]
-X_train, X_test, y_train, y_test = X[:60000], X[60000:], y[:60000], y[60000:]
-shuffle_index = np.random.permutation(60000)
-X_train, y_train = X_train[shuffle_index], y_train[shuffle_index]
-y_train_5 = (y_train == 5)
-y_test_5 = (y_test == 5)
+log_clf = LogisticRegression()
+sgd_clf = SGDClassifier(max_iter=5)
+svm_clf = SVC(probability=True)
+rnd_clf = RandomForestClassifier()
+voting_hard_clf = VotingClassifier(
+    estimators=[('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    voting='hard')
+voting_soft_clf = VotingClassifier(
+    estimators=[('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    voting='soft')  # 采用分类的probability
 
-
-
-sgd_clf = SGDClassifier(max_iter=5, random_state=42)
-sgd_clf.fit(X_train, y_train_5)
-
-some_digit = X[36000]
-sgd_clf.predict([some_digit])
-
-y_train_pred = cross_val_predict(sgd_clf, X_train, y_train_5, cv=3)
-confusion_matrix(y_train_5, y_train_pred)
-precision_score(y_train_5, y_train_pred)
-recall_score(y_train_5, y_train_pred)
-f1_score(y_train_5, y_train_pred)
-
-# 可以通过决策分数来间接设置阈值来改变准确率和召回率
-# decision_function 得到分数
-y_scores = cross_val_predict(sgd_clf, X_train, y_train_5, cv=3, method="decision_function")
-
-# hack to work around issue #9589 in Scikit-Learn 0.19.0
-if y_scores.ndim == 2:
-    y_scores = y_scores[:, 1]
-
-precisions, recalls, thresholds = precision_recall_curve(y_train_5, y_scores)
-
-
-def plot_precision_recall_vs_threshold(precisions, recalls, thresholds):
-    plt.plot(thresholds, precisions[:-1], "b--", label="Precision", linewidth=2)
-    plt.plot(thresholds, recalls[:-1], "g-", label="Recall", linewidth=2)
-    plt.xlabel("Threshold", fontsize=16)
-    plt.legend(loc="upper left", fontsize=16)
-    plt.ylim([0, 1])
-
-
-plt.figure(figsize=(8, 4))
-plot_precision_recall_vs_threshold(precisions, recalls, thresholds)
-plt.xlim([-700000, 700000])
-save_fig("precision_recall_vs_threshold_plot")
-plt.show()
-
-(y_train_pred == (y_scores > 0)).all()
-y_train_pred_90 = (y_scores > 70000)
-precision_score(y_train_5, y_train_pred_90)
-recall_score(y_train_5, y_train_pred_90)
-
+for clf in (log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
+    starttime = time.clock()
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print(clf.__class__.__name__, time.clock() - starttime)
+    print(confusion_matrix(y_test, y_pred))
+    print("accuracy_score:{:.3f}".format(accuracy_score(y_test, y_pred)))
+    print("precision_score:{:.3f}".format(precision_score(y_test, y_pred)))
+    print("recall_score:{:.3f}".format(recall_score(y_test, y_pred)))
+    print("f1_score:{:.3f}".format(f1_score(y_test, y_pred)))
 
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
-def plot_precision_vs_recall(precisions, recalls):
-    plt.plot(recalls, precisions, "b-", linewidth=2)
-    plt.xlabel("Recall", fontsize=16)
-    plt.ylabel("Precision", fontsize=16)
-    plt.axis([0, 1, 0, 1])
-
-
 plt.figure(figsize=(8, 6))
-plot_precision_vs_recall(precisions, recalls)
-save_fig("precision_vs_recall_plot")
+plt.xlabel("Recall", fontsize=16)
+plt.ylabel("Precision", fontsize=16)
+plt.axis([0, 1, 0, 1])
+color = ['r', 'y', 'b', 'g']
+for cn, clf in enumerate((log_clf, sgd_clf, svm_clf, rnd_clf)):
+    print(cn)
+    y_train_pred = cross_val_predict(clf, X_train, y_train, cv=3)
+    if clf is rnd_clf:
+        y_probas = cross_val_predict(clf, X_train, y_train, cv=3, method="predict_proba")
+        y_scores = y_probas[:, 1]  # score = proba of positive class
+    else:
+        y_scores = cross_val_predict(clf, X_train, y_train, cv=3, method="decision_function")
+
+    precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
+    plt.plot(recalls, precisions, linewidth=1, label=clf.__class__.__name__, color=color[cn])
+    fpr, tpr, thresholds = roc_curve(y_train, y_scores)
+    print("{} roc socore: {}".format(clf.__class__.__name__, roc_auc_score(y_train, y_scores)))
+    plt.plot(fpr, tpr, linewidth=1, color=color[cn])
+
+plt.legend()
 plt.show()
-
-
-# # ROC curves
-def plot_roc_curve(fpr, tpr, label=None):
-    plt.plot(fpr, tpr, linewidth=2, label=label)
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.axis([0, 1, 0, 1])
-    plt.xlabel('False Positive Rate', fontsize=16)
-    plt.ylabel('True Positive Rate', fontsize=16)
-
-
-fpr, tpr, thresholds = roc_curve(y_train_5, y_scores)
-roc_auc_score(y_train_5, y_scores)
-plt.figure(figsize=(8, 6))
-plot_roc_curve(fpr, tpr)
-save_fig("roc_curve_plot")
-plt.show()
-
-# Random Forest
-forest_clf = RandomForestClassifier(random_state=42)
-# predict_proba 得到几率
-y_probas_forest = cross_val_predict(forest_clf, X_train, y_train_5, cv=3, method="predict_proba")
-y_scores_forest = y_probas_forest[:, 1]  # score = proba of positive class
-fpr_forest, tpr_forest, thresholds_forest = roc_curve(y_train_5, y_scores_forest)
-roc_auc_score(y_train_5, y_scores_forest)
-
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, "b:", linewidth=2, label="SGD")
-plot_roc_curve(fpr_forest, tpr_forest, "Random Forest")
-plt.legend(loc="lower right", fontsize=16)
-save_fig("roc_curve_comparison_plot")
-plt.show()
-
-y_train_pred_forest = cross_val_predict(forest_clf, X_train, y_train_5, cv=3)
-precision_score(y_train_5, y_train_pred_forest)
-recall_score(y_train_5, y_train_pred_forest)
 
 # # 误差分析
-sgd_clf.fit(X_train, y_train)
-sgd_clf.predict([some_digit])
-some_digit_scores = sgd_clf.decision_function([some_digit])
-np.argmax(some_digit_scores)
-sgd_clf.classes_[5]
-
-forest_clf.fit(X_train, y_train)
-forest_clf.predict([some_digit])
-forest_clf.predict_proba([some_digit])
-cross_val_score(sgd_clf, X_train, y_train, cv=3, scoring="accuracy")
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train.astype(np.float64))
-cross_val_score(sgd_clf, X_train_scaled, y_train, cv=3, scoring="accuracy")
-
-y_train_pred = cross_val_predict(sgd_clf, X_train_scaled, y_train, cv=3)
-conf_mx = confusion_matrix(y_train, y_train_pred)
-
+cm = confusion_matrix(y_train, y_train_pred)
 
 def plot_confusion_matrix(matrix):
     """If you prefer color and a colorbar"""
@@ -181,15 +109,13 @@ def plot_confusion_matrix(matrix):
     fig.colorbar(cax)
 
 
-plt.matshow(conf_mx, cmap=plt.cm.gray)
-save_fig("confusion_matrix_plot", tight_layout=False)
+plt.matshow(cm, cmap=plt.cm.gray)
 plt.show()
 
-row_sums = conf_mx.sum(axis=1, keepdims=True)
-norm_conf_mx = conf_mx / row_sums
+row_sums = cm.sum(axis=1, keepdims=True)
+norm_conf_mx = cm / row_sums
 np.fill_diagonal(norm_conf_mx, 0)
 plt.matshow(norm_conf_mx, cmap=plt.cm.gray)
-save_fig("confusion_matrix_errors_plot", tight_layout=False)
 plt.show()
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -203,3 +129,32 @@ knn_clf.fit(X_train, y_multilabel)
 knn_clf.predict([some_digit])
 y_train_knn_pred = cross_val_predict(knn_clf, X_train, y_multilabel, cv=3, n_jobs=-1)
 f1_score(y_multilabel, y_train_knn_pred, average="macro")
+
+# 可以通过决策分数来间接设置阈值来改变准确率和召回率
+# decision_function 得到分数
+y_scores = cross_val_predict(sgd_clf, X_train, y_train, cv=3, method="decision_function")
+
+# hack to work around issue #9589 in Scikit-Learn 0.19.0
+if y_scores.ndim == 2:
+    y_scores = y_scores[:, 1]
+
+precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
+
+
+def plot_precision_recall_vs_threshold(precisions, recalls, thresholds):
+    plt.plot(thresholds, precisions[:-1], "b--", label="Precision", linewidth=2)
+    plt.plot(thresholds, recalls[:-1], "g-", label="Recall", linewidth=2)
+    plt.xlabel("Threshold", fontsize=16)
+    plt.legend(loc="upper left", fontsize=16)
+    plt.ylim([0, 1])
+
+
+plt.figure(figsize=(8, 4))
+plot_precision_recall_vs_threshold(precisions, recalls, thresholds)
+plt.xlim([-700000, 700000])
+plt.show()
+
+(y_train_pred == (y_scores > 0)).all()
+y_train_pred_90 = (y_scores > 70000)
+precision_score(y_train, y_train_pred_90)
+recall_score(y_train, y_train_pred_90)
