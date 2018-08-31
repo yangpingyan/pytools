@@ -23,6 +23,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.model_selection import cross_val_predict, train_test_split
 from sklearn.model_selection import cross_val_score
@@ -52,18 +53,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y)
 # plt.plot(X[:, 0][y == 0], X[:, 1][y == 0], "yo", alpha=0.4)
 # plt.plot(X[:, 0][y == 1], X[:, 1][y == 1], "bs", alpha=0.4)
 
+knn_clf = KNeighborsClassifier()
 log_clf = LogisticRegression()
 sgd_clf = SGDClassifier(max_iter=5)
 svm_clf = SVC(probability=True)
 rnd_clf = RandomForestClassifier()
 voting_hard_clf = VotingClassifier(
-    estimators=[('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    estimators=[('knn', log_clf),  ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='hard')
 voting_soft_clf = VotingClassifier(
-    estimators=[('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='soft')  # 采用分类的probability
 
-for clf in (log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
+for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
     starttime = time.clock()
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
@@ -76,14 +78,13 @@ for clf in (log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf
 
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
-plt.xlabel("Recall", fontsize=16)
-plt.ylabel("Precision", fontsize=16)
+plt.xlabel("Recall(FPR)", fontsize=16)
+plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
-color = ['r', 'y', 'b', 'g']
-for cn, clf in enumerate((log_clf, sgd_clf, svm_clf, rnd_clf)):
-    print(cn)
+color = ['r', 'y', 'b', 'g', 'c']
+for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
     y_train_pred = cross_val_predict(clf, X_train, y_train, cv=3)
-    if clf is rnd_clf:
+    if clf is rnd_clf or clf is knn_clf:
         y_probas = cross_val_predict(clf, X_train, y_train, cv=3, method="predict_proba")
         y_scores = y_probas[:, 1]  # score = proba of positive class
     else:
@@ -118,17 +119,9 @@ np.fill_diagonal(norm_conf_mx, 0)
 plt.matshow(norm_conf_mx, cmap=plt.cm.gray)
 plt.show()
 
-from sklearn.neighbors import KNeighborsClassifier
 
-y_train_large = (y_train >= 7)
-y_train_odd = (y_train % 2 == 1)
-y_multilabel = np.c_[y_train_large, y_train_odd]
 
-knn_clf = KNeighborsClassifier()
-knn_clf.fit(X_train, y_multilabel)
-knn_clf.predict([some_digit])
-y_train_knn_pred = cross_val_predict(knn_clf, X_train, y_multilabel, cv=3, n_jobs=-1)
-f1_score(y_multilabel, y_train_knn_pred, average="macro")
+
 
 # 可以通过决策分数来间接设置阈值来改变准确率和召回率
 # decision_function 得到分数
