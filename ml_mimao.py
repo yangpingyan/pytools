@@ -118,10 +118,10 @@ color = ['r', 'y', 'b', 'g', 'c']
 for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
     y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
     if clf is rnd_clf or clf is knn_clf:
-        y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba")
+        y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
         y_scores = y_probas[:, 1]  # score = proba of positive class
     else:
-        y_scores = cross_val_predict(clf, x_train, y_train, cv=3, method="decision_function")
+        y_scores = cross_val_predict(clf, x_train, y_train, cv=3, method="decision_function", n_jobs=-1)
 
     precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
     plt.plot(recalls, precisions, linewidth=1, label=clf.__class__.__name__, color=color[cn])
@@ -132,7 +132,7 @@ for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
 plt.legend()
 plt.show()
 
-exit(0)
+
 # y_train_pred = classifier.predict(x_train)
 # cm_train = confusion_matrix(y_train, y_train_pred)
 
@@ -165,12 +165,12 @@ param_grid = [
     # then try 6 (2×3) combinations with bootstrap set as False
     {'bootstrap': [False], 'n_estimators': [3, 10], 'max_features': [2, 3, 4]},
 ]
-forest_reg = RandomForestRegressor(random_state=42)
+forest_clf = RandomForestClassifier()
 # train across 5 folds, that's a total of (12+6)*5=90 rounds of training
-grid_search = GridSearchCV(forest_reg, param_grid, cv=5,
-                           scoring='neg_mean_squared_error', return_train_score=True)
-grid_search.fit(housing_prepared, housing_labels)
-
+grid_search = GridSearchCV(forest_clf, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, return_train_score=True)
+starttime = time.clock()
+grid_search.fit(x, y)
+print(time.clock()-starttime)
 # The best hyperparameter combination found:
 grid_search.best_params_
 grid_search.best_estimator_
