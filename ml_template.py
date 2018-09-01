@@ -49,7 +49,7 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 from sklearn.datasets import make_moons
 
 X, y = make_moons(n_samples=500, noise=0.30)
-X_train, X_test, y_train, y_test = train_test_split(X, y)
+x_train, x_test, y_train, y_test = train_test_split(X, y)
 # plt.plot(X[:, 0][y == 0], X[:, 1][y == 0], "yo", alpha=0.4)
 # plt.plot(X[:, 0][y == 1], X[:, 1][y == 1], "bs", alpha=0.4)
 
@@ -59,7 +59,7 @@ sgd_clf = SGDClassifier(max_iter=5)
 svm_clf = SVC(probability=True)
 rnd_clf = RandomForestClassifier()
 voting_hard_clf = VotingClassifier(
-    estimators=[('knn', log_clf),  ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    estimators=[('knn', log_clf), ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='hard')
 voting_soft_clf = VotingClassifier(
     estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
@@ -67,8 +67,8 @@ voting_soft_clf = VotingClassifier(
 
 for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
     starttime = time.clock()
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
+    clf.fit(x_train, y_train)
+    y_pred = clf.predict(x_test)
     print(clf.__class__.__name__, time.clock() - starttime)
     print(confusion_matrix(y_test, y_pred))
     print("accuracy_score:{:.3f}".format(accuracy_score(y_test, y_pred)))
@@ -83,12 +83,12 @@ plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 color = ['r', 'y', 'b', 'g', 'c']
 for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
-    y_train_pred = cross_val_predict(clf, X_train, y_train, cv=3)
+    y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
     if clf is rnd_clf or clf is knn_clf:
-        y_probas = cross_val_predict(clf, X_train, y_train, cv=3, method="predict_proba")
+        y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba")
         y_scores = y_probas[:, 1]  # score = proba of positive class
     else:
-        y_scores = cross_val_predict(clf, X_train, y_train, cv=3, method="decision_function")
+        y_scores = cross_val_predict(clf, x_train, y_train, cv=3, method="decision_function")
 
     precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
     plt.plot(recalls, precisions, linewidth=1, label=clf.__class__.__name__, color=color[cn])
@@ -101,6 +101,7 @@ plt.show()
 
 # # 误差分析
 cm = confusion_matrix(y_train, y_train_pred)
+
 
 def plot_confusion_matrix(matrix):
     """If you prefer color and a colorbar"""
@@ -119,13 +120,9 @@ np.fill_diagonal(norm_conf_mx, 0)
 plt.matshow(norm_conf_mx, cmap=plt.cm.gray)
 plt.show()
 
-
-
-
-
 # 可以通过决策分数来间接设置阈值来改变准确率和召回率
 # decision_function 得到分数
-y_scores = cross_val_predict(sgd_clf, X_train, y_train, cv=3, method="decision_function")
+y_scores = cross_val_predict(sgd_clf, x_train, y_train, cv=3, method="decision_function")
 
 # hack to work around issue #9589 in Scikit-Learn 0.19.0
 if y_scores.ndim == 2:

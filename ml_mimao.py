@@ -11,22 +11,28 @@
 # 6. 微调模型。
 # 7. 给出解决方案。
 # 8. 部署、监控、维护系统。
-import csv
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from matplotlib.colors import ListedColormap
-from sklearn import preprocessing, feature_selection, model_selection, metrics
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import SGDClassifier
 from sklearn.svm import SVC
-
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.model_selection import cross_val_predict, train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import precision_recall_curve, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_curve, roc_auc_score
 import time
 import os
+import csv
 
-# discount 影响很大, 0.026, 0.762
-starttime = time.clock()
 # to make output display better
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.max_rows', 20)
@@ -39,10 +45,8 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-print("Mission start")
-
 tmp = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
-       'cost', 'first_pay', 'daily_rent', 'lease_term', 'discount', 'pay_num',
+       'cost', 'first_pay', 'daily_rent', 'lease_term', 'pay_num',
        'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
        'card_id', 'zmxy_score',  # 生成sex, age, zmf_score, xbf_score
        'phone_book', 'phone',
@@ -58,8 +62,7 @@ df.fillna(value=0, inplace=True)
 features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
 features_number = ['cost', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', ]
 df_num = df[features_number]
-df_discrete = df[features_cat]
-y = df['check_result']
+df_cat = df[features_cat]
 
 # 数据调试代码
 # df.sort_values(by=['phone_book'], inplace=True)
@@ -67,97 +70,67 @@ y = df['check_result']
 # df['deposit'].value_counts()
 # df.info()
 
-
 # 特征处理
 for feature in features_cat:
-    df[feature] = preprocessing.LabelEncoder().fit_transform(df[feature])
-
-## Importing the dataset
-x = df[features_cat + features_number]
-
-## Handling the missing data
-# x = preprocessing.Imputer(missing_values="NaN", strategy="mean", axis=0).fit_transform(x)
+    df[feature] = LabelEncoder().fit_transform(df[feature])
 
 ## Feature Scaling
-x[features_number] = preprocessing.StandardScaler().fit_transform(x[features_number])
+df[features_number] = StandardScaler().fit_transform(df[features_number])
 
+x = df[features_cat + features_number]
+y = df['check_result']
 ## Encoding Categorical data
 # x = preprocessing.OneHotEncoder(categorical_features=np.array([0,1,2,3,4,5])).fit_transform(x).toarray()
 
 
 ## Splitting the dataset into the Training set and Test set
-x_train, x_test, y_train, y_test = model_selection.train_test_split(x, y, test_size=0.20, random_state=0)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20)
 
-## Feature Scaling
-# sc = StandardScaler()
-# X_train = sc.fit_transform(X_train)
-# X_test = sc.transform(X_test)
-
-## Fitting SVM to the Training set
-svm_clf = SVC()
-svm_clf.fit(x_train, y_train)
-y_train_pred = svm_clf.predict(x_train)
-cm = metrics.confusion_matrix(y_train, y_train_pred)
-print(cm)
-print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
-print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
-print("SVC ML mission complete! {:.2f}S".format((time.clock() - starttime)))
-
-print("SVC:")
-starttime = time.clock()
-svm_clf = SVC()
-y_train_pred = model_selection.cross_val_predict(svm_clf, x_train, y_train, cv=10)
-cm = metrics.confusion_matrix(y_train, y_train_pred)
-print(cm)
-print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
-print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
-print("SVC ML mission complete! {:.2f}S".format((time.clock() - starttime)))
-
-print("RandomForestClassifier:")
-starttime = time.clock()
-forest_clf = RandomForestClassifier()
-y_train_pred = model_selection.cross_val_predict(forest_clf, x_train, y_train, cv=10)
-cm = metrics.confusion_matrix(y_train, y_train_pred)
-print(cm)
-print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
-print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
-print("RandomForestClassifier ML mission complete! {:.2f}S".format((time.clock() - starttime)))
-forest_clf.fit(x_train, y_train)
-for name, score in zip(x.columns.tolist(), forest_clf.feature_importances_):
-    print(name, score)
-
-print("DecisionTreeClassifier:")
-starttime = time.clock()
-from sklearn.tree import DecisionTreeClassifier
-tree_clf = DecisionTreeClassifier()
-y_train_pred = model_selection.cross_val_predict(tree_clf, x_train, y_train, cv=10)
-cm = metrics.confusion_matrix(y_train, y_train_pred)
-print(cm)
-print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_train, y_train_pred))))
-print("precision score:{:.3f}".format(metrics.precision_score(y_train, y_train_pred)))  # 0.930
-print("recall score:{:.3f}".format(metrics.recall_score(y_train, y_train_pred)))  # 0.706
-print("DecisionTreeClassifier ML mission complete! {:.2f}S".format((time.clock() - starttime)))
-
-
+knn_clf = KNeighborsClassifier()
 log_clf = LogisticRegression()
+sgd_clf = SGDClassifier(max_iter=5)
+svm_clf = SVC(probability=True)
 rnd_clf = RandomForestClassifier()
-svm_clf = SVC()
+voting_hard_clf = VotingClassifier(
+    estimators=[('knn', log_clf), ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    voting='hard')
+voting_soft_clf = VotingClassifier(
+    estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
+    voting='soft')  # 采用分类的probability
 
-for clf in (log_clf, rnd_clf, svm_clf):
+for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
     starttime = time.clock()
     clf.fit(x_train, y_train)
-    endtime = time.clock()
     y_pred = clf.predict(x_test)
-    cm = metrics.confusion_matrix(y_test, y_pred)
-    print(cm)
-    print("{} run time {:.3f}".format(clf.__class__.__name__,endtime-starttime))
-    print("accuracy score:{:.3f}".format(metrics.accuracy_score(y_test, y_pred)))
-    print("precision score:{:.3f}".format(metrics.precision_score(y_test, y_pred)))
-    print("recall score:{:.3f}".format(metrics.recall_score(y_test, y_pred)))
-    print("squared mean squared error:{:.3f}".format(np.sqrt(metrics.mean_squared_error(y_test, y_pred))))
+    print(clf.__class__.__name__, time.clock() - starttime)
+    print(confusion_matrix(y_test, y_pred))
+    print("accuracy_score:{:.3f}".format(accuracy_score(y_test, y_pred)))
+    print("precision_score:{:.3f}".format(precision_score(y_test, y_pred)))
+    print("recall_score:{:.3f}".format(recall_score(y_test, y_pred)))
+    print("f1_score:{:.3f}".format(f1_score(y_test, y_pred)))
+
+# 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
+plt.figure(figsize=(8, 6))
+plt.xlabel("Recall(FPR)", fontsize=16)
+plt.ylabel("Precision(TPR)", fontsize=16)
+plt.axis([0, 1, 0, 1])
+color = ['r', 'y', 'b', 'g', 'c']
+for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
+    y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
+    if clf is rnd_clf or clf is knn_clf:
+        y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba")
+        y_scores = y_probas[:, 1]  # score = proba of positive class
+    else:
+        y_scores = cross_val_predict(clf, x_train, y_train, cv=3, method="decision_function")
+
+    precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
+    plt.plot(recalls, precisions, linewidth=1, label=clf.__class__.__name__, color=color[cn])
+    fpr, tpr, thresholds = roc_curve(y_train, y_scores)
+    print("{} roc socore: {}".format(clf.__class__.__name__, roc_auc_score(y_train, y_scores)))
+    plt.plot(fpr, tpr, linewidth=1, color=color[cn])
+
+plt.legend()
+plt.show()
 
 exit(0)
 # y_train_pred = classifier.predict(x_train)
@@ -225,8 +198,6 @@ cvres = rnd_search.cv_results_
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
 
-
-
 # 分析最佳模型和它们的误差
 feature_importances = grid_search.best_estimator_.feature_importances_
 feature_importances
@@ -237,7 +208,6 @@ cat_encoder = full_pipeline.named_transformers_["cat"]
 cat_one_hot_attribs = list(cat_encoder.categories_[0])
 attributes = num_attribs + extra_attribs + cat_one_hot_attribs
 sorted(zip(feature_importances, attributes), reverse=True)
-
 
 # 用测试集评估系统
 final_model = grid_search.best_estimator_
@@ -255,11 +225,9 @@ final_rmse
 
 # 模型保存于加载
 from sklearn.externals import joblib
+
 joblib.dump(my_model, "my_model.pkl")
 my_model_loaded = joblib.load("my_model.pkl")
-
-
-
 
 # 然后就是项目的预上线阶段：你需要展示你的方案（重点说明学到了什么、做了什么、没做
 # 什么、做过什么假设、系统的限制是什么，等等），记录下所有事情，用漂亮的图表和容易
