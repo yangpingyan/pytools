@@ -107,6 +107,8 @@ df.sort_values(by=[val], inplace=True)
 #     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
 #     cost = first_pay （短租），
 #     cost = 总租赁天数*每日租金（长租）
+df['pay'] = df['first_pay'] * df['lease_term']
+df[['pay', 'first_pay', 'lease_term', 'daily_rent', 'pay_num', 'accident_insurance']]
 # check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1]['create_hour'].value_counts()})
 # check_all = pd.DataFrame({'all': df['create_hour'].value_counts()})
 # check_hour = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
@@ -238,11 +240,12 @@ df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
 # df.sort_values(by=['merchant_id'], inplace=True)
 
-df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
-df = df[df['xbf_score'] > 0]
-df = df[df['zmf_score'] > 0]
+# df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
+# df = df[df['xbf_score'] > 0]
+# df = df[df['zmf_score'] > 0]
 df.fillna(value=0, inplace=True)
-df.to_csv("mibaodata_ml.csv", index=False)
+print("保存的数据量: {}".format(df.shape))
+df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 df.head()
 df.info()
 df.describe()
