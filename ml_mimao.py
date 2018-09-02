@@ -207,7 +207,8 @@ for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
 # 分析最佳模型和它们的误差
 feature_importances = grid_search.best_estimator_.feature_importances_
 feature_importances
-
+for name, score in zip(x.columns, grid_search.best_estimator_.feature_importances_):
+    print(name, score)
 # 用测试集评估系统
 
 
