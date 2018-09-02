@@ -45,22 +45,18 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-tmp = ['goods_name', 'goods_type', 'price', 'old_level', 'deposit',
-       'cost', 'first_pay', 'daily_rent', 'lease_term', 'pay_num',
-       'freeze_money', 'disposable_payment_discount', 'original_daily_rent',
-       'card_id', 'zmxy_score',  # 生成sex, age, zmf_score, xbf_score
-       'phone_book', 'phone',
+tmp = ['goods_type',
+       'first_pay', 'daily_rent',
        'provice', 'city', 'regoin', 'type.1', 'detail_json', 'result',
-       'emergency_contact_phone', 'emergency_contact_relation',
-       'pay_type', 'merchant_id', 'channel', 'type', 'source',  # 影响比较小的元素
-       'ip', 'order_type', 'receive_address',  # 可能有用但还不知道怎么用
-       'releted', ]  # 丢弃相关数据
+       'ip', 'receive_address',  # 可能有用但还不知道怎么用
+        ]  # 丢弃相关数据
 
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 df.fillna(value=0, inplace=True)
 
-features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book']
-features_number = ['cost', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', ]
+features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book', 'create_time_cat', 'old_level',
+                'emergency_contact_phone', 'source', 'order_type',  ]
+features_number = ['cost', 'price', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', 'original_daily_rent', ]
 df_num = df[features_number]
 df_cat = df[features_cat]
 
@@ -132,7 +128,6 @@ for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
 plt.legend()
 plt.show()
 
-
 # y_train_pred = classifier.predict(x_train)
 # cm_train = confusion_matrix(y_train, y_train_pred)
 
@@ -170,16 +165,18 @@ forest_clf = RandomForestClassifier()
 grid_search = GridSearchCV(forest_clf, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, return_train_score=True)
 starttime = time.clock()
 grid_search.fit(x, y)
-print(time.clock()-starttime)
+print(time.clock() - starttime)
 # The best hyperparameter combination found:
 grid_search.best_params_
 grid_search.best_estimator_
+grid_search.best_score_
+grid_search.grid_scores_
 
 # Let's look at the score of each hyperparameter combination tested during the grid search:
 cvres = grid_search.cv_results_
+results = pd.DataFrame(grid_search.cv_results_)
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
-pd.DataFrame(grid_search.cv_results_)
 
 # 模型微调-随机搜索
 from sklearn.model_selection import RandomizedSearchCV
@@ -189,11 +186,17 @@ param_distribs = {
     'n_estimators': randint(low=1, high=200),
     'max_features': randint(low=1, high=8),
 }
-forest_reg = RandomForestRegressor(random_state=42)
-rnd_search = RandomizedSearchCV(forest_reg, param_distributions=param_distribs,
-                                n_iter=10, cv=5, scoring='neg_mean_squared_error', random_state=42)
-rnd_search.fit(housing_prepared, housing_labels)
 
+forest_clf = RandomForestClassifier()
+rnd_search = RandomizedSearchCV(forest_clf, param_distributions=param_distribs,
+                                n_iter=10, cv=5, scoring='roc_auc', n_jobs=-1)
+starttime = time.clock()
+rnd_search.fit(x, y)
+print(time.clock() - starttime)
+rnd_search.best_params_
+rnd_search.best_estimator_
+rnd_search.best_score_
+rnd_search.grid_scores_
 cvres = rnd_search.cv_results_
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
@@ -202,32 +205,14 @@ for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
 feature_importances = grid_search.best_estimator_.feature_importances_
 feature_importances
 
-extra_attribs = ["rooms_per_hhold", "pop_per_hhold", "bedrooms_per_room"]
-# cat_encoder = cat_pipeline.named_steps["cat_encoder"] # old solution
-cat_encoder = full_pipeline.named_transformers_["cat"]
-cat_one_hot_attribs = list(cat_encoder.categories_[0])
-attributes = num_attribs + extra_attribs + cat_one_hot_attribs
-sorted(zip(feature_importances, attributes), reverse=True)
-
 # 用测试集评估系统
-final_model = grid_search.best_estimator_
 
-X_test = strat_test_set.drop("median_house_value", axis=1)
-y_test = strat_test_set["median_house_value"].copy()
-
-X_test_prepared = full_pipeline.transform(X_test)
-final_predictions = final_model.predict(X_test_prepared)
-
-final_mse = mean_squared_error(y_test, final_predictions)
-final_rmse = np.sqrt(final_mse)
-
-final_rmse
 
 # 模型保存于加载
-from sklearn.externals import joblib
-
-joblib.dump(my_model, "my_model.pkl")
-my_model_loaded = joblib.load("my_model.pkl")
+# from sklearn.externals import joblib
+#
+# joblib.dump(my_model, "my_model.pkl")
+# my_model_loaded = joblib.load("my_model.pkl")
 
 # 然后就是项目的预上线阶段：你需要展示你的方案（重点说明学到了什么、做了什么、没做
 # 什么、做过什么假设、系统的限制是什么，等等），记录下所有事情，用漂亮的图表和容易

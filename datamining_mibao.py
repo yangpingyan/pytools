@@ -38,13 +38,15 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "学校数据.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
-
+print("初始数据量: {}".format(df_alldata.shape))
 df = df_alldata.dropna(axis=1, how='all')
 
 # 处理身份证号
-df['card_id'] = df['card_id'].apply(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
+df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
+# 目前discount字段是用户下单通过后才生成的，无法使用。
+# 建议保存用户下单时的优惠金额，因为违约用户大概率是不计较优惠金额，
 features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
             'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
@@ -54,6 +56,7 @@ features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_s
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
+
 
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
@@ -84,19 +87,37 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
+# 有phone_book的赋值成1， 空的赋值成0(空值最后统一赋值）
+df['phone_book'][df['phone_book'].notnull()] = 1
+
 # 根据create_time 按时间段分类
-df.sort_values(by=['phone_book'], inplace=True)
-df[df['phone_book'].isnull()]
-df['deposit'].value_counts()
-df[['create_time', 'create_hour', 'check_result']].info()
-df['create_time']
 df['create_hour'] = df['create_time'].map(lambda x: int(x[-8:-6]))
-dft = df[df['check_result'] == 1]
-dft['create_hour'].value_counts()
+df['create_time_cat'] = df['create_hour'].map(lambda x: 0 if 0 < x < 7 else 1)
+
+# 有emergency_contact_phone的赋值成1， 空的赋值成0(空值最后统一赋值）
+df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
+
+# 数据调试代码
+val = 'source'
+df[['check_result', val]].info()
+df[val].value_counts()
+df[df[val].isnull()]
+df.sort_values(by=[val], inplace=True)
+# 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
+#     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
+#     cost = first_pay （短租），
+#     cost = 总租赁天数*每日租金（长租）
+# check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1]['create_hour'].value_counts()})
+# check_all = pd.DataFrame({'all': df['create_hour'].value_counts()})
+# check_hour = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
+# check_hour['pass_rate'] = check_hour['pass'] / check_hour['all'] * 100
+# plt.plot(check_hour['pass_rate'], 'yo')
+
+
 # df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
 
 # 处理detail_json
-#展开detail_json中所有的字典
+# 展开detail_json中所有的字典
 def expand_dict(dict_in):
     dict_out = dict()
     for k, v in dict_in.items():
@@ -113,12 +134,23 @@ def expand_dict(dict_in):
             dict_out[k] = v
     return dict_out
 
+
 dict_out = dict()
 for val in df['detail_json']:
-    if(isinstance(val, str)):
+    if (isinstance(val, str)):
         dict_out.update(expand_dict(json.loads(val)))
 
-detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_type_display_name', 'fraud_type_display_name', 'evidence_time', 'risk_level', 'fraud_type', 'value', 'type', 'data', 'detail', 'count', 'dimension', 'platform_count', 'final_decision', 'discredit_times', 'overdue_time', 'overdue_amount_range', 'fuzzy_id_number', 'fuzzy_name', 'overdue_day_range', 'high_risk_areas', 'hit_list_datas', 'overdue_count', 'execute_subject', 'execute_court', 'case_code', 'executed_name', 'case_date', 'evidence_court', 'execute_status', 'term_duty', 'gender', 'carry_out', 'execute_code', 'province', 'specific_circumstances', 'age', 'finalDecision', 'finalScore', 'memo', 'ruleId', 'ruleName', 'template', 'riskType', 'strategyMode', 'strategyName', 'strategyScore', 'firstType', 'grade', 'secondType', 'name', 'rejectValue', 'reviewValue', 'true_ip_address', 'mobile_address', 'id_card_address', 'isp', 'latitude', 'position', 'longitude', 'error', 'proxyProtocol', 'port', 'proxyType']
+detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_type_display_name',
+               'fraud_type_display_name', 'evidence_time', 'risk_level', 'fraud_type', 'value', 'type', 'data',
+               'detail', 'count', 'dimension', 'platform_count', 'final_decision', 'discredit_times', 'overdue_time',
+               'overdue_amount_range', 'fuzzy_id_number', 'fuzzy_name', 'overdue_day_range', 'high_risk_areas',
+               'hit_list_datas', 'overdue_count', 'execute_subject', 'execute_court', 'case_code', 'executed_name',
+               'case_date', 'evidence_court', 'execute_status', 'term_duty', 'gender', 'carry_out', 'execute_code',
+               'province', 'specific_circumstances', 'age', 'finalDecision', 'finalScore', 'memo', 'ruleId', 'ruleName',
+               'template', 'riskType', 'strategyMode', 'strategyName', 'strategyScore', 'firstType', 'grade',
+               'secondType', 'name', 'rejectValue', 'reviewValue', 'true_ip_address', 'mobile_address',
+               'id_card_address', 'isp', 'latitude', 'position', 'longitude', 'error', 'proxyProtocol', 'port',
+               'proxyType']
 # for col in detail_cols:
 #     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
 #
@@ -209,6 +241,7 @@ df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
 df = df[df['xbf_score'] > 0]
 df = df[df['zmf_score'] > 0]
+df.fillna(value=0, inplace=True)
 df.to_csv("mibaodata_ml.csv", index=False)
 df.head()
 df.info()
