@@ -54,12 +54,10 @@ tmp = [
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 df.fillna(value=0, inplace=True)
 print("ML初始数据量: {}".format(df.shape))
-# 去除身份证重复的订单：
-df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
-print("去除身份证重复的订单后的数据量: {}".format(df.shape))
+
 features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book', 'create_time_cat', 'old_level',
-                'emergency_contact_phone', 'source', 'order_type',  ]
-features_number = ['cost', 'price', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', 'original_daily_rent', 'first_pay']
+                'emergency_contact_phone', 'source', 'order_type', 'result' ]
+features_number = ['cost', 'price', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', 'original_daily_rent',]
 df_num = df[features_number]
 df_cat = df[features_cat]
 
@@ -97,7 +95,7 @@ voting_soft_clf = VotingClassifier(
     estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='soft')  # 采用分类的probability
 
-for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting_soft_clf):
+for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf):
     starttime = time.clock()
     clf.fit(x_train, y_train)
     y_pred = clf.predict(x_test)
@@ -107,6 +105,7 @@ for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf, voting_hard_clf, voting
     print("precision_score:{:.3f}".format(precision_score(y_test, y_pred)))
     print("recall_score:{:.3f}".format(recall_score(y_test, y_pred)))
     print("f1_score:{:.3f}".format(f1_score(y_test, y_pred)))
+
 
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
@@ -209,6 +208,8 @@ feature_importances = grid_search.best_estimator_.feature_importances_
 feature_importances
 for name, score in zip(x.columns, grid_search.best_estimator_.feature_importances_):
     print(name, score)
+
+exit(0)
 # 用测试集评估系统
 
 

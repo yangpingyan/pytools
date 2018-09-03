@@ -83,6 +83,10 @@ print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
 df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
 
+# 去除身份证重复的订单：
+df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
+print("去除身份证重复的订单后的数据量: {}".format(df.shape))
+
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
@@ -97,18 +101,13 @@ df['create_time_cat'] = df['create_hour'].map(lambda x: 0 if 0 < x < 7 else 1)
 # 有emergency_contact_phone的赋值成1， 空的赋值成0(空值最后统一赋值）
 df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
 
-# 数据调试代码
-val = 'source'
-df[['check_result', val]].info()
-df[val].value_counts()
-df[df[val].isnull()]
-df.sort_values(by=[val], inplace=True)
+
 # 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
 #     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
 #     cost = first_pay （短租），
 #     cost = 总租赁天数*每日租金（长租）
-df['pay'] = df['first_pay'] * df['lease_term']
-df[['pay', 'first_pay', 'lease_term', 'daily_rent', 'pay_num', 'accident_insurance']]
+# df['pay'] = df['first_pay'] * df['lease_term']
+# df[['pay', 'first_pay', 'lease_term', 'daily_rent', 'pay_num', 'accident_insurance']]
 # check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1]['create_hour'].value_counts()})
 # check_all = pd.DataFrame({'all': df['create_hour'].value_counts()})
 # check_hour = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
@@ -116,9 +115,25 @@ df[['pay', 'first_pay', 'lease_term', 'daily_rent', 'pay_num', 'accident_insuran
 # plt.plot(check_hour['pass_rate'], 'yo')
 
 
-# df.to_csv(r'C:\Users\Administrator\iCloudDrive\蜜宝数据\蜜宝数据-已去除无用字段.csv', index=False)
-
 # 处理detail_json
+df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else 'NODATA')
+df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
+
+# 数据调试代码
+val = 'result'
+df[['check_result', val]].info()
+df[val].value_counts()
+df[df[val].isnull()]
+df.sort_values(by=[val], inplace=True)
+check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1][val].value_counts()})
+check_reject = pd.DataFrame({'reject': df[df['check_result'] == 0][val].value_counts()})
+check_all = pd.DataFrame({'all': df[val].value_counts()})
+check_df = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
+check_df = check_df.merge(check_reject, how='outer', left_index=True, right_index=True)
+check_df['pass_rate'] = check_df['pass'] / check_df['all'] * 100
+check_df['reject_rate'] = check_df['reject'] / check_df['all'] * 100
+plt.plot(check_df['pass_rate'], 'gs')
+plt.plot(check_df['reject_rate'], 'ro')
 # 展开detail_json中所有的字典
 def expand_dict(dict_in):
     dict_out = dict()
