@@ -26,3 +26,4 @@ keras
 scikit-learn
 autokeras
 ipython
+xlrd
