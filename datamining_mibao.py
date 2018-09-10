@@ -23,13 +23,48 @@ from matplotlib.colors import ListedColormap
 import time
 import os
 
+
+# Function to calculate missing values by column# Funct
+from sklearn.preprocessing import LabelEncoder
+
+
+def missing_values_table(df):
+    # Total missing values
+    mis_val = df.isnull().sum()
+
+    # Percentage of missing values
+    mis_val_percent = 100 * df.isnull().sum() / len(df)
+
+    # Make a table with the results
+    mis_val_table = pd.concat([mis_val, mis_val_percent], axis=1)
+
+    # Rename the columns
+    mis_val_table_ren_columns = mis_val_table.rename(
+        columns={0: 'Missing Values', 1: '% of Total Values'})
+
+    # Sort the table by percentage of missing descending
+    mis_val_table_ren_columns = mis_val_table_ren_columns[
+        mis_val_table_ren_columns.iloc[:, 1] != 0].sort_values(
+        '% of Total Values', ascending=False).round(1)
+
+    # Print some summary information
+    print("Your selected dataframe has " + str(df.shape[1]) + " columns.\n"
+                                                              "There are " + str(mis_val_table_ren_columns.shape[0]) +
+          " columns that have missing values.")
+
+    # Return the dataframe with missing information
+    return mis_val_table_ren_columns
+
+
 # to make output display better
 pd.set_option('display.max_columns', 50)
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 20)
 pd.set_option('display.width', 1000)
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
+plt.rcParams['font.sans-serif'] = ['Simhei'] #用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False #用来正常显示负号
 # read large csv file
 csv.field_size_limit(100000000)
 
@@ -56,6 +91,19 @@ features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_s
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
+
+df.info()
+df.describe()
+# Missing values statistics
+missing_values = missing_values_table(df)
+missing_values.head(20)
+# Number of each type of column
+df.dtypes.value_counts()
+# Number of unique classes in each object column
+df.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
+
+df.describe(include=['O'])
+
 
 
 # 丢弃身份证号为空的数据
