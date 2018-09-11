@@ -24,6 +24,7 @@ import time
 import os
 from sklearn.preprocessing import LabelEncoder
 
+
 def missing_values_table(df):
     # Total missing values
     mis_val = df.isnull().sum()
@@ -309,9 +310,8 @@ df['phone'] = df['phone'].map(lambda x: x[0:3])
 # df = df[df['xbf_score'] > 0]
 # df = df[df['zmf_score'] > 0]
 
-features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term',
-                'type', 'order_type', 'source', 'phone_book', 'emergency_contact_phone',
-                'old_level', 'create_hour', 'sex', ]
+features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
+                'source', 'phone_book', 'emergency_contact_phone', 'old_level', 'create_hour', 'sex', ]
 features_number = ['cost', 'daily_rent', 'price', 'age', 'zmf_score', 'xbf_score', ]
 
 df = df[features_cat + features_number]
@@ -319,13 +319,10 @@ for col in df.columns.values:
     if df[col].dtype == 'O':
         df[col].fillna(value='NODATA', inplace=True)
 df.fillna(value=0, inplace=True)
-print("保存的数据量: {}".format(df.shape))
-
-df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
 # 调试特征
 '''
-val = 'xbf_score'
+val = 'age'
 val_band = val + '_band'
 df[val_band] = pd.cut(df['create_hour'], 5, labels=False)
 val_ana = val_band
@@ -337,21 +334,34 @@ df[[val_ana, 'check_result']].groupby([val_ana], as_index=False).mean().sort_val
 
 # 芝麻分分类
 bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
-df['zmf_score'] = pd.cut(df['zmf_score'], bins)
+df['zmf_score_band'] = pd.cut(df['zmf_score'], bins, labels=False)
+df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
+                                                                                            ascending=False)
 
 # 小白分分类
 bins = pd.IntervalIndex.from_tuples([(0, 80), (80, 90), (90, 100), (100, 200)])
-df['xbf_score'] = pd.cut(df['xbf_score'], bins)
+df['xbf_score_band'] = pd.cut(df['xbf_score'], bins, labels=False)
+df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
+                                                                                            ascending=False)
+
+# 年龄分类
+bins = pd.IntervalIndex.from_tuples([(0, 18), (18, 24), (24, 30), (30, 40), (40, 100)])
+df['age_band'] = pd.cut(df['age'], bins, labels=False)
+df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result', ascending=False)
 
 # 下单时间分类
-df['create_hour'] = pd.cut(df['create_hour'], 5, labels=False)
+df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
 
-
+features = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
+            'source', 'phone_book', 'emergency_contact_phone', 'old_level', 'sex', 'create_hour', 'age_band', 'zmf_score_band',
+            'xbf_score_band', ]
+df = df[features]
 # 类别特征全部转换成数字
-for feature in features_cat:
+for feature in features:
     df[feature] = LabelEncoder().fit_transform(df[feature])
 
-df[features_cat].head()
+print("保存的数据量: {}".format(df.shape))
+df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
 g = sns.FacetGrid(df, col='check_result')
 g.map(plt.hist, 'age', bins=20)

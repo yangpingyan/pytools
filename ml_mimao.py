@@ -45,43 +45,22 @@ PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 
-tmp = [
-       'first_pay', 'daily_rent',
-       'provice', 'city', 'regoin', 'type.1', 'detail_json', 'result',
-       'ip', 'receive_address',  # 可能有用但还不知道怎么用
-        ]  # 丢弃相关数据
-
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
-df.fillna(value=0, inplace=True)
 print("ML初始数据量: {}".format(df.shape))
 
-features_cat = ['sex', 'pay_num', 'disposable_payment_discount', 'phone_book', 'create_time_cat', 'old_level',
-                'emergency_contact_phone', 'source', 'order_type', 'result' ]
-features_number = ['cost', 'price', 'age', 'deposit', 'freeze_money', 'zmf_score', 'xbf_score', 'original_daily_rent',]
-df_num = df[features_number]
-df_cat = df[features_cat]
 
-# 数据调试代码
-# df.sort_values(by=['phone_book'], inplace=True)
-# df[df['phone_book'].isnull()]
-# df['deposit'].value_counts()
-# df.info()
 
-# 特征处理
-for feature in features_cat:
-    df[feature] = LabelEncoder().fit_transform(df[feature])
 
 ## Feature Scaling
-df[features_number] = StandardScaler().fit_transform(df[features_number])
 
-x = df[features_cat + features_number]
+x = df.drop('check_result', axis=1)
 y = df['check_result']
 ## Encoding Categorical data
 # x = preprocessing.OneHotEncoder(categorical_features=np.array([0,1,2,3,4,5])).fit_transform(x).toarray()
 
 
 ## Splitting the dataset into the Training set and Test set
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.20)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
 
 knn_clf = KNeighborsClassifier()
 log_clf = LogisticRegression()
