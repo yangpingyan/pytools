@@ -107,21 +107,23 @@ voting_soft_clf = VotingClassifier(
     estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='soft')  # 采用分类的probability
 
+clf_list = [knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, perceptron_clf, linear_svc]
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
-for clf in (knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, perceptron_clf, linear_svc ):
+for clf in clf_list:
     starttime = time.clock()
     clf.fit(x_train, y_train)
     y_pred = clf.predict(x_test)
     add_score(score_df, clf.__class__.__name__, time.clock() - starttime, x_test, y_test)
 
 print(score_df)
+
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
 plt.xlabel("Recall(FPR)", fontsize=16)
 plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 color = ['r', 'y', 'b', 'g', 'c']
-for cn, clf in enumerate((knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf)):
+for cn, clf in enumerate(clf_list):
     y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
     if clf is rnd_clf or clf is knn_clf:
         y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
