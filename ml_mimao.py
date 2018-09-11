@@ -17,10 +17,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.colors import ListedColormap
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.linear_model import SGDClassifier
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
@@ -48,9 +49,6 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("ML初始数据量: {}".format(df.shape))
 
-
-
-
 ## Feature Scaling
 
 x = df.drop('check_result', axis=1)
@@ -58,14 +56,49 @@ y = df['check_result']
 ## Encoding Categorical data
 # x = preprocessing.OneHotEncoder(categorical_features=np.array([0,1,2,3,4,5])).fit_transform(x).toarray()
 
-
 ## Splitting the dataset into the Training set and Test set
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
 
-knn_clf = KNeighborsClassifier()
+'''
+With these two criteria - Supervised Learning plus Classification and Regression, 
+we can narrow down our choice of models to a few. These include:
+Logistic Regression
+KNN or k-Nearest Neighbors
+Support Vector Machines
+Naive Bayes classifier
+Decision Tree
+Random Forrest
+Perceptron
+Artificial neural network
+RVM or Relevance Vector Machine
+'''
+
+
+def add_score(score_df, name, runtime, x_test, y_test):
+    score_df[name] = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred),
+                      f1_score(y_test, y_pred), runtime, confusion_matrix(y_test, y_pred)]
+
+    return score_df
+
+
+
+
 log_clf = LogisticRegression()
+log_clf.fit(x_train, y_train)
+y_pred = log_clf.predict(x_test)
+coeff_df = pd.DataFrame(x.columns.values)
+coeff_df.columns = ['Feature']
+coeff_df["Correlation"] = pd.Series(log_clf.coef_[0])
+coeff_df.sort_values(by='Correlation', ascending=False, inplace=True)
+print(coeff_df)
+
+knn_clf = KNeighborsClassifier()
+gaussian_clf = GaussianNB()
+perceptron_clf = Perceptron()
 sgd_clf = SGDClassifier(max_iter=5)
 svm_clf = SVC(probability=True)
+linear_svc = LinearSVC()
+decision_tree = DecisionTreeClassifier()
 rnd_clf = RandomForestClassifier()
 voting_hard_clf = VotingClassifier(
     estimators=[('knn', log_clf), ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
@@ -74,18 +107,14 @@ voting_soft_clf = VotingClassifier(
     estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
     voting='soft')  # 采用分类的probability
 
-for clf in (knn_clf, log_clf, sgd_clf, svm_clf, rnd_clf):
+score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
+for clf in (knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, perceptron_clf, linear_svc ):
     starttime = time.clock()
     clf.fit(x_train, y_train)
     y_pred = clf.predict(x_test)
-    print(clf.__class__.__name__, time.clock() - starttime)
-    print(confusion_matrix(y_test, y_pred))
-    print("accuracy_score:{:.3f}".format(accuracy_score(y_test, y_pred)))
-    print("precision_score:{:.3f}".format(precision_score(y_test, y_pred)))
-    print("recall_score:{:.3f}".format(recall_score(y_test, y_pred)))
-    print("f1_score:{:.3f}".format(f1_score(y_test, y_pred)))
+    add_score(score_df, clf.__class__.__name__, time.clock() - starttime, x_test, y_test)
 
-
+print(score_df)
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
 plt.xlabel("Recall(FPR)", fontsize=16)
