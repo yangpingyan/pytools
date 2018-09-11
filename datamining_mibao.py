@@ -15,18 +15,14 @@
 
 import csv
 import json
-
+import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import time
 import os
-
-
-# Function to calculate missing values by column# Funct
 from sklearn.preprocessing import LabelEncoder
-
 
 def missing_values_table(df):
     # Total missing values
@@ -58,13 +54,13 @@ def missing_values_table(df):
 
 # to make output display better
 pd.set_option('display.max_columns', 50)
-pd.set_option('display.max_rows', 20)
+pd.set_option('display.max_rows', 50)
 pd.set_option('display.width', 1000)
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
-plt.rcParams['font.sans-serif'] = ['Simhei'] #用来正常显示中文标签
-plt.rcParams['axes.unicode_minus'] = False #用来正常显示负号
+plt.rcParams['font.sans-serif'] = ['Simhei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 # read large csv file
 csv.field_size_limit(100000000)
 
@@ -93,18 +89,15 @@ df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
 df.info()
+# Number of unique classes in each object column
+df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
 df.describe()
+df.describe(include=['O'])
 # Missing values statistics
 missing_values = missing_values_table(df)
 missing_values.head(20)
 # Number of each type of column
 df.dtypes.value_counts()
-# Number of unique classes in each object column
-df.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
-
-df.describe(include=['O'])
-
-
 
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
@@ -139,16 +132,15 @@ print("去除身份证重复的订单后的数据量: {}".format(df.shape))
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
 
-# 有phone_book的赋值成1， 空的赋值成0(空值最后统一赋值）
+# 有phone_book的赋值成1， 空的赋值成0
 df['phone_book'][df['phone_book'].notnull()] = 1
-
+df['phone_book'][df['phone_book'].isnull()] = 0
 # 根据create_time 按时间段分类
 df['create_hour'] = df['create_time'].map(lambda x: int(x[-8:-6]))
 df['create_time_cat'] = df['create_hour'].map(lambda x: 0 if 0 < x < 7 else 1)
 
 # 有emergency_contact_phone的赋值成1， 空的赋值成0(空值最后统一赋值）
 df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
-
 
 # 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
 #     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
@@ -168,6 +160,7 @@ df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else '
 df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
 
 # 数据调试代码
+'''
 val = 'result'
 df[['check_result', val]].info()
 df[val].value_counts()
@@ -182,6 +175,8 @@ check_df['pass_rate'] = check_df['pass'] / check_df['all'] * 100
 check_df['reject_rate'] = check_df['reject'] / check_df['all'] * 100
 plt.plot(check_df['pass_rate'], 'gs')
 plt.plot(check_df['reject_rate'], 'ro')
+
+
 # 展开detail_json中所有的字典
 def expand_dict(dict_in):
     dict_out = dict()
@@ -216,6 +211,7 @@ detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_
                'secondType', 'name', 'rejectValue', 'reviewValue', 'true_ip_address', 'mobile_address',
                'id_card_address', 'isp', 'latitude', 'position', 'longitude', 'error', 'proxyProtocol', 'port',
                'proxyType']
+'''
 # for col in detail_cols:
 #     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
 #
@@ -294,24 +290,72 @@ for x in df['zmxy_score']:
                 zmf[row] = (score)
 
     row += 1
+
 df['zmf_score'] = zmf
 df['xbf_score'] = xbf
+df['zmf_score'][df['zmf_score'] == 0] = 600
+df['xbf_score'][df['xbf_score'] == 0] = 87.6
 
 # 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
+
+# 取手机号码前三位
+df['phone'] = df['phone'].map(lambda x: x[0:3])
 
 # df.sort_values(by=['merchant_id'], inplace=True)
 
 # df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
 # df = df[df['xbf_score'] > 0]
 # df = df[df['zmf_score'] > 0]
+
+features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term',
+                'type', 'order_type', 'source', 'phone_book', 'emergency_contact_phone',
+                'old_level', 'create_hour', 'sex', ]
+features_number = ['cost', 'daily_rent', 'price', 'age', 'zmf_score', 'xbf_score', ]
+
+df = df[features_cat + features_number]
+for col in df.columns.values:
+    if df[col].dtype == 'O':
+        df[col].fillna(value='NODATA', inplace=True)
 df.fillna(value=0, inplace=True)
 print("保存的数据量: {}".format(df.shape))
+
 df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
-df.head()
-df.info()
-df.describe()
+
+# 调试特征
+'''
+val = 'xbf_score'
+val_band = val + '_band'
+df[val_band] = pd.cut(df['create_hour'], 5, labels=False)
+val_ana = val_band
+df[val_ana].dtype
+df[val_ana].value_counts()
+df[[val_ana, 'check_result']].groupby([val_ana], as_index=False).mean().sort_values(by='check_result', ascending=False)
+
+'''
+
+# 芝麻分分类
+bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
+df['zmf_score'] = pd.cut(df['zmf_score'], bins)
+
+# 小白分分类
+bins = pd.IntervalIndex.from_tuples([(0, 80), (80, 90), (90, 100), (100, 200)])
+df['xbf_score'] = pd.cut(df['xbf_score'], bins)
+
+# 下单时间分类
+df['create_hour'] = pd.cut(df['create_hour'], 5, labels=False)
+
+
+# 类别特征全部转换成数字
+for feature in features_cat:
+    df[feature] = LabelEncoder().fit_transform(df[feature])
+
+df[features_cat].head()
+
+g = sns.FacetGrid(df, col='check_result')
+g.map(plt.hist, 'age', bins=20)
+
 df.hist(bins=50, figsize=(20, 15))
 
 # # Discover and visualize the data to gain insights

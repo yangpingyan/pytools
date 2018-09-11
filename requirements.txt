@@ -27,3 +27,4 @@ scikit-learn
 autokeras
 ipython
 xlrd
+seaborn
