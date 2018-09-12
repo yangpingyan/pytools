@@ -160,7 +160,6 @@ df['emergency_contact_phone'][df['emergency_contact_phone'].isnull()] = 0
 df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else 'NODATA')
 df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
 
-
 '''
 
 
@@ -308,12 +307,11 @@ for col in df.columns.values:
 df.fillna(value=0, inplace=True)
 
 
-# 调试特征
-def feature_analyse(df, col, bins=5):
-
+# 特征分析
+def feature_analyse(df, col, bins=10):
     if df[col].dtype != 'O':
         col_band = col + '_band'
-        df[col_band] = pd.cut(df['create_hour'], bins, labels=True)
+        df[col_band] = pd.cut(df[col], bins).astype(str)
         col_ana = col_band
     else:
         col_ana = col
@@ -326,10 +324,12 @@ def feature_analyse(df, col, bins=5):
     analyse_df = analyse_df.merge(reject_df, how='outer', left_index=True, right_index=True)
     analyse_df['pass_rate'] = analyse_df['pass'] / analyse_df['all']
     analyse_df.sort_values(by='pass_rate', inplace=True, ascending=False)
+    print(analyse_df)
+    plt.plot(analyse_df['pass_rate'], 'bo')
+    plt.ylabel('Pass Rate')
 
 
-
-col = 'channel'
+# feature_analyse(df, 'pay_num')
 
 # 芝麻分分类
 bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
@@ -369,36 +369,7 @@ plt.title('Pearson Correlation of Features', y=1.05, size=15)
 sns.heatmap(df.astype(float).corr(), linewidths=0.1, vmax=1.0,
             square=True, cmap=plt.cm.RdBu, linecolor='white', annot=True)
 
-# # Discover and visualize the data to gain insights
-df.plot(kind="scatter", x="zmf_score", y="xbf_score", alpha=0.4,
-        s=df["check_result"], label="check_result", figsize=(10, 7),
-        c="check_result", cmap=plt.get_cmap("jet"), colorbar=True,
-        sharex=False)
-plt.legend()
+from pandas.plotting import scatter_matrix
 
-corr_matrix = df.corr()
-corr_matrix["check_result"].sort_values(ascending=False)
-#
-# from pandas.plotting import scatter_matrix
-#
-# attributes = ["median_house_value", "median_income", "total_rooms",
-#               "housing_median_age"]
-# scatter_matrix(housing[attributes], figsize=(12, 8))
-# # save_fig("scatter_matrix_plot")
-#
-# housing.plot(kind="scatter", x="median_income", y="median_house_value", alpha=0.1)
-# plt.axis([0, 16, 0, 550000])
-# # save_fig("income_vs_house_value_scatterplot")
-#
-# housing["rooms_per_household"] = housing["total_rooms"] / housing["households"]
-# housing["bedrooms_per_room"] = housing["total_bedrooms"] / housing["total_rooms"]
-# housing["population_per_household"] = housing["population"] / housing["households"]
-#
-# corr_matrix = housing.corr()
-# corr_matrix["median_house_value"].sort_values(ascending=False)
-#
-# housing.plot(kind="scatter", x="rooms_per_household", y="median_house_value", alpha=0.2)
-# plt.axis([0, 5, 0, 520000])
-# plt.show()
 
 print("Missiong Complete!")

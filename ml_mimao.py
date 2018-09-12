@@ -46,17 +46,12 @@ plt.rcParams['ytick.labelsize'] = 12
 PROJECT_ROOT_DIR = os.getcwd()
 DATA_ID = "mibaodata_ml.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
-
+# Get Data
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("ML初始数据量: {}".format(df.shape))
 
-## Feature Scaling
-
 x = df.drop('check_result', axis=1)
 y = df['check_result']
-## Encoding Categorical data
-# x = preprocessing.OneHotEncoder(categorical_features=np.array([0,1,2,3,4,5])).fit_transform(x).toarray()
-
 ## Splitting the dataset into the Training set and Test set
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
 
@@ -76,7 +71,7 @@ XGBoost
 LightGBM
 '''
 
-
+# 保存所有模型得分
 def add_score(score_df, name, runtime, x_test, y_test):
     score_df[name] = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred),
                       f1_score(y_test, y_pred), runtime, confusion_matrix(y_test, y_pred)]
@@ -101,14 +96,8 @@ svm_clf = SVC(probability=True)
 linear_svc = LinearSVC()
 decision_tree = DecisionTreeClassifier()
 rnd_clf = RandomForestClassifier()
-voting_hard_clf = VotingClassifier(
-    estimators=[('knn', log_clf), ('lr', log_clf), ('sf', sgd_clf), ('svc', svm_clf), ('rf', rnd_clf)],
-    voting='hard')
-voting_soft_clf = VotingClassifier(
-    estimators=[('knn', log_clf), ('lr', log_clf), ('svc', svm_clf), ('rf', rnd_clf)],
-    voting='soft')  # 采用分类的probability
 
-clf_list = [knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, perceptron_clf, linear_svc]
+clf_list = [knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, linear_svc]
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
 for clf in clf_list:
     starttime = time.clock()
@@ -117,6 +106,7 @@ for clf in clf_list:
     add_score(score_df, clf.__class__.__name__, time.clock() - starttime, x_test, y_test)
 
 print(score_df)
+
 
 # Ensembling & Stacking models
 # Some useful parameters which will come in handy later on
@@ -154,7 +144,8 @@ plt.xlabel("Recall(FPR)", fontsize=16)
 plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 color = ['r', 'y', 'b', 'g', 'c']
-for cn, clf in enumerate((rnd_clf, knn_clf)):
+for cn, clf in enumerate((knn_clf, rnd_clf)):
+    print(clf.__class__.__name__)
     y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
     if clf in (rnd_clf, knn_clf, decision_tree, gaussian_clf):
         y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
@@ -171,27 +162,6 @@ for cn, clf in enumerate((rnd_clf, knn_clf)):
 plt.legend()
 plt.show()
 
-# y_train_pred = classifier.predict(x_train)
-# cm_train = confusion_matrix(y_train, y_train_pred)
-
-## Visualising the Training set results
-## Visualising the Test set results
-# from matplotlib.colors import ListedColormap
-# X_set, y_set = X_test, y_test
-# X1, X2 = np.meshgrid(np.arange(start = X_set[:, 0].min() - 1, stop = X_set[:, 0].max() + 1, step = 0.01),
-#                      np.arange(start = X_set[:, 1].min() - 1, stop = X_set[:, 1].max() + 1, step = 0.01))
-# plt.contourf(X1, X2, classifier.predict(np.array([X1.ravel(), X2.ravel()]).T).reshape(X1.shape),
-#              alpha = 0.5, cmap = ListedColormap(('red', 'green')))
-# plt.xlim(X1.min(), X1.max())
-# plt.ylim(X2.min(), X2.max())
-# for i, j in enumerate(np.unique(y_set)):
-#     plt.scatter(X_set[y_set == j, 0], X_set[y_set == j, 1],
-#                 c = ListedColormap(('red', 'green'))(i), label = j)
-# plt.title('SVM (Test set)')
-# plt.xlabel('zmf')
-# plt.ylabel('xbf')
-# plt.legend()
-# plt.show()
 
 # 模型微调，寻找最佳超参数
 # 网格搜索
@@ -205,7 +175,7 @@ param_grid = [
 ]
 forest_clf = RandomForestClassifier()
 # train across 5 folds, that's a total of (12+6)*5=90 rounds of training
-grid_search = GridSearchCV(forest_clf, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, return_train_score=True)
+grid_search = GridSearchCV(forest_clf, param_grid, cv=5, scoring='roc_auc', n_jobs=1, return_train_score=True)
 starttime = time.clock()
 grid_search.fit(x_train, y_train)
 print(time.clock() - starttime)
