@@ -30,6 +30,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.metrics import precision_recall_curve, precision_score, recall_score, f1_score
 from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.model_selection import KFold
 import time
 import os
 import csv
@@ -71,6 +72,8 @@ Random Forrest
 Perceptron
 Artificial neural network
 RVM or Relevance Vector Machine
+XGBoost
+LightGBM
 '''
 
 
@@ -81,12 +84,10 @@ def add_score(score_df, name, runtime, x_test, y_test):
     return score_df
 
 
-
-
 log_clf = LogisticRegression()
 log_clf.fit(x_train, y_train)
 y_pred = log_clf.predict(x_test)
-coeff_df = pd.DataFrame(x.columns.values)
+coeff_df = pd.DataFrame(x_test.columns.values)
 coeff_df.columns = ['Feature']
 coeff_df["Correlation"] = pd.Series(log_clf.coef_[0])
 coeff_df.sort_values(by='Correlation', ascending=False, inplace=True)
@@ -117,15 +118,45 @@ for clf in clf_list:
 
 print(score_df)
 
+# Ensembling & Stacking models
+# Some useful parameters which will come in handy later on
+ntrain = x_train.shape[0]
+ntest = x_test.shape[0]
+SEED = 0  # for reproducibility
+NFOLDS = 5  # set folds for out-of-fold prediction
+kf = KFold(n_splits=NFOLDS, random_state=SEED)
+
+
+# Class to extend the Sklearn classifier
+class SklearnHelper(object):
+    def __init__(self, clf, seed=0, params=None):
+        params['random_state'] = seed
+        self.clf = clf(**params)
+
+    def train(self, x_train, y_train):
+        self.clf.fit(x_train, y_train)
+
+    def predict(self, x):
+        return self.clf.predict(x)
+
+    def fit(self, x, y):
+        return self.clf.fit(x, y)
+
+    def feature_importances(self, x, y):
+        print(self.clf.fit(x, y).feature_importances_)
+
+
+# Class to extend XGboost classifer
+
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
 plt.xlabel("Recall(FPR)", fontsize=16)
 plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 color = ['r', 'y', 'b', 'g', 'c']
-for cn, clf in enumerate(clf_list):
+for cn, clf in enumerate((rnd_clf, knn_clf)):
     y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
-    if clf is rnd_clf or clf is knn_clf:
+    if clf in (rnd_clf, knn_clf, decision_tree, gaussian_clf):
         y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
         y_scores = y_probas[:, 1]  # score = proba of positive class
     else:
@@ -176,13 +207,12 @@ forest_clf = RandomForestClassifier()
 # train across 5 folds, that's a total of (12+6)*5=90 rounds of training
 grid_search = GridSearchCV(forest_clf, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, return_train_score=True)
 starttime = time.clock()
-grid_search.fit(x, y)
+grid_search.fit(x_train, y_train)
 print(time.clock() - starttime)
 # The best hyperparameter combination found:
 grid_search.best_params_
 grid_search.best_estimator_
 grid_search.best_score_
-grid_search.grid_scores_
 
 # Let's look at the score of each hyperparameter combination tested during the grid search:
 cvres = grid_search.cv_results_
@@ -203,26 +233,29 @@ forest_clf = RandomForestClassifier()
 rnd_search = RandomizedSearchCV(forest_clf, param_distributions=param_distribs,
                                 n_iter=10, cv=5, scoring='roc_auc', n_jobs=-1)
 starttime = time.clock()
-rnd_search.fit(x, y)
+rnd_search.fit(x_train, y_train)
 print(time.clock() - starttime)
 rnd_search.best_params_
 rnd_search.best_estimator_
 rnd_search.best_score_
-rnd_search.grid_scores_
 cvres = rnd_search.cv_results_
 for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
     print(np.sqrt(-mean_score), params)
 
-# 分析最佳模型和它们的误差
 feature_importances = grid_search.best_estimator_.feature_importances_
-feature_importances
-for name, score in zip(x.columns, grid_search.best_estimator_.feature_importances_):
-    print(name, score)
+importance_df = pd.DataFrame({'name': x_train.columns, 'importance': feature_importances})
+importance_df.sort_values(by=['importance'], ascending=False, inplace=True)
+print(importance_df)
 
-exit(0)
+# 分析最佳模型和它们的误差
+
 # 用测试集评估系统
-
-
+clf = grid_search.best_estimator_
+starttime = time.clock()
+clf.fit(x_train, y_train)
+y_pred = clf.predict(x_test)
+add_score(score_df, clf.__class__.__name__+'best', time.clock() - starttime, x_test, y_test)
+print(score_df)
 # 模型保存于加载
 # from sklearn.externals import joblib
 #

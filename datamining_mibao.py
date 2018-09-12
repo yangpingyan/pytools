@@ -140,9 +140,9 @@ df['phone_book'][df['phone_book'].isnull()] = 0
 df['create_hour'] = df['create_time'].map(lambda x: int(x[-8:-6]))
 df['create_time_cat'] = df['create_hour'].map(lambda x: 0 if 0 < x < 7 else 1)
 
-# 有emergency_contact_phone的赋值成1， 空的赋值成0(空值最后统一赋值）
+# 有emergency_contact_phone的赋值成1， 空的赋值成0
 df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
-
+df['emergency_contact_phone'][df['emergency_contact_phone'].isnull()] = 0
 # 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
 #     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
 #     cost = first_pay （短租），
@@ -160,22 +160,9 @@ df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
 df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else 'NODATA')
 df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
 
-# 数据调试代码
+
 '''
-val = 'result'
-df[['check_result', val]].info()
-df[val].value_counts()
-df[df[val].isnull()]
-df.sort_values(by=[val], inplace=True)
-check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1][val].value_counts()})
-check_reject = pd.DataFrame({'reject': df[df['check_result'] == 0][val].value_counts()})
-check_all = pd.DataFrame({'all': df[val].value_counts()})
-check_df = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
-check_df = check_df.merge(check_reject, how='outer', left_index=True, right_index=True)
-check_df['pass_rate'] = check_df['pass'] / check_df['all'] * 100
-check_df['reject_rate'] = check_df['reject'] / check_df['all'] * 100
-plt.plot(check_df['pass_rate'], 'gs')
-plt.plot(check_df['reject_rate'], 'ro')
+
 
 
 # 展开detail_json中所有的字典
@@ -320,40 +307,53 @@ for col in df.columns.values:
         df[col].fillna(value='NODATA', inplace=True)
 df.fillna(value=0, inplace=True)
 
-# 调试特征
-'''
-val = 'age'
-val_band = val + '_band'
-df[val_band] = pd.cut(df['create_hour'], 5, labels=False)
-val_ana = val_band
-df[val_ana].dtype
-df[val_ana].value_counts()
-df[[val_ana, 'check_result']].groupby([val_ana], as_index=False).mean().sort_values(by='check_result', ascending=False)
 
-'''
+# 调试特征
+def feature_analyse(df, col, bins=5):
+
+    if df[col].dtype != 'O':
+        col_band = col + '_band'
+        df[col_band] = pd.cut(df['create_hour'], bins, labels=True)
+        col_ana = col_band
+    else:
+        col_ana = col
+
+    print(df[['check_result', col_ana]].info())
+    pass_df = pd.DataFrame({'pass': df[df['check_result'] == 1][col_ana].value_counts()})
+    reject_df = pd.DataFrame({'reject': df[df['check_result'] == 0][col_ana].value_counts()})
+    all_df = pd.DataFrame({'all': df[col_ana].value_counts()})
+    analyse_df = all_df.merge(pass_df, how='outer', left_index=True, right_index=True)
+    analyse_df = analyse_df.merge(reject_df, how='outer', left_index=True, right_index=True)
+    analyse_df['pass_rate'] = analyse_df['pass'] / analyse_df['all']
+    analyse_df.sort_values(by='pass_rate', inplace=True, ascending=False)
+
+
+
+col = 'channel'
 
 # 芝麻分分类
 bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
 df['zmf_score_band'] = pd.cut(df['zmf_score'], bins, labels=False)
 df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
-                                                                                            ascending=False)
+                                                                                                      ascending=False)
 
 # 小白分分类
 bins = pd.IntervalIndex.from_tuples([(0, 80), (80, 90), (90, 100), (100, 200)])
 df['xbf_score_band'] = pd.cut(df['xbf_score'], bins, labels=False)
 df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
-                                                                                            ascending=False)
+                                                                                                      ascending=False)
 
 # 年龄分类
 bins = pd.IntervalIndex.from_tuples([(0, 18), (18, 24), (24, 30), (30, 40), (40, 100)])
 df['age_band'] = pd.cut(df['age'], bins, labels=False)
-df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result', ascending=False)
+df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',
+                                                                                          ascending=False)
 
 # 下单时间分类
 df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
 
-features = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
-            'source', 'phone_book', 'emergency_contact_phone', 'old_level', 'sex', 'create_hour', 'age_band', 'zmf_score_band',
+features = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'type', 'order_type',
+            'source', 'phone_book', 'old_level', 'sex', 'create_hour', 'age_band', 'zmf_score_band',
             'xbf_score_band', ]
 df = df[features]
 # 类别特征全部转换成数字
@@ -363,10 +363,11 @@ for feature in features:
 print("保存的数据量: {}".format(df.shape))
 df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
-g = sns.FacetGrid(df, col='check_result')
-g.map(plt.hist, 'age', bins=20)
-
-df.hist(bins=50, figsize=(20, 15))
+# Pearson Correlation Heatmap
+plt.figure(figsize=(14, 12))
+plt.title('Pearson Correlation of Features', y=1.05, size=15)
+sns.heatmap(df.astype(float).corr(), linewidths=0.1, vmax=1.0,
+            square=True, cmap=plt.cm.RdBu, linecolor='white', annot=True)
 
 # # Discover and visualize the data to gain insights
 df.plot(kind="scatter", x="zmf_score", y="xbf_score", alpha=0.4,
