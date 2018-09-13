@@ -348,7 +348,7 @@ bins = pd.IntervalIndex.from_tuples([(0, 18), (18, 24), (24, 30), (30, 40), (40,
 df['age_band'] = pd.cut(df['age'], bins, labels=False)
 df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',
                                                                                           ascending=False)
-
+df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).sum()
 # 下单时间分类
 df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
 

@@ -11,7 +11,9 @@
 # 6. 微调模型。
 # 7. 给出解决方案。
 # 8. 部署、监控、维护系统。
-
+import time
+import os
+import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,9 +33,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.metrics import precision_recall_curve, precision_score, recall_score, f1_score
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.model_selection import KFold
-import time
-import os
-import csv
+from xgboost import XGBClassifier
 
 # to make output display better
 pd.set_option('display.max_columns', 50)
@@ -71,6 +71,7 @@ XGBoost
 LightGBM
 '''
 
+
 # 保存所有模型得分
 def add_score(score_df, name, runtime, x_test, y_test):
     score_df[name] = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred),
@@ -96,8 +97,9 @@ svm_clf = SVC(probability=True)
 linear_svc = LinearSVC()
 decision_tree = DecisionTreeClassifier()
 rnd_clf = RandomForestClassifier()
+xg_clf = XGBClassifier()
 
-clf_list = [knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, linear_svc]
+clf_list = [xg_clf, knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, linear_svc]
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
 for clf in clf_list:
     starttime = time.clock()
@@ -106,37 +108,6 @@ for clf in clf_list:
     add_score(score_df, clf.__class__.__name__, time.clock() - starttime, x_test, y_test)
 
 print(score_df)
-
-
-# Ensembling & Stacking models
-# Some useful parameters which will come in handy later on
-ntrain = x_train.shape[0]
-ntest = x_test.shape[0]
-SEED = 0  # for reproducibility
-NFOLDS = 5  # set folds for out-of-fold prediction
-kf = KFold(n_splits=NFOLDS, random_state=SEED)
-
-
-# Class to extend the Sklearn classifier
-class SklearnHelper(object):
-    def __init__(self, clf, seed=0, params=None):
-        params['random_state'] = seed
-        self.clf = clf(**params)
-
-    def train(self, x_train, y_train):
-        self.clf.fit(x_train, y_train)
-
-    def predict(self, x):
-        return self.clf.predict(x)
-
-    def fit(self, x, y):
-        return self.clf.fit(x, y)
-
-    def feature_importances(self, x, y):
-        print(self.clf.fit(x, y).feature_importances_)
-
-
-# Class to extend XGboost classifer
 
 # 使用PR曲线： 当正例较少或者关注假正例多假反例。 其他情况用ROC曲线
 plt.figure(figsize=(8, 6))
@@ -161,7 +132,6 @@ for cn, clf in enumerate((knn_clf, rnd_clf)):
 
 plt.legend()
 plt.show()
-
 
 # 模型微调，寻找最佳超参数
 # 网格搜索
@@ -224,7 +194,7 @@ clf = grid_search.best_estimator_
 starttime = time.clock()
 clf.fit(x_train, y_train)
 y_pred = clf.predict(x_test)
-add_score(score_df, clf.__class__.__name__+'best', time.clock() - starttime, x_test, y_test)
+add_score(score_df, clf.__class__.__name__ + 'best', time.clock() - starttime, x_test, y_test)
 print(score_df)
 # 模型保存于加载
 # from sklearn.externals import joblib
