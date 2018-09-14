@@ -50,10 +50,10 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("ML初始数据量: {}".format(df.shape))
 
-x = df.drop(['check_result', 'channel'], axis=1)
+x = df.drop(['check_result'], axis=1)
 y = df['check_result']
 ## Splitting the dataset into the Training set and Test set
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
 
 '''
 With these two criteria - Supervised Learning plus Classification and Regression, 
