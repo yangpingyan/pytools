@@ -50,7 +50,7 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("ML初始数据量: {}".format(df.shape))
 
-x = df.drop('check_result', axis=1)
+x = df.drop(['check_result', 'channel'], axis=1)
 y = df['check_result']
 ## Splitting the dataset into the Training set and Test set
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25)
@@ -115,10 +115,10 @@ plt.xlabel("Recall(FPR)", fontsize=16)
 plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 color = ['r', 'y', 'b', 'g', 'c']
-for cn, clf in enumerate((knn_clf, rnd_clf)):
+for cn, clf in enumerate((knn_clf, rnd_clf, xg_clf)):
     print(clf.__class__.__name__)
     y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
-    if clf in (rnd_clf, knn_clf, decision_tree, gaussian_clf):
+    if clf in (rnd_clf, knn_clf, decision_tree, gaussian_clf, xg_clf):
         y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
         y_scores = y_probas[:, 1]  # score = proba of positive class
     else:

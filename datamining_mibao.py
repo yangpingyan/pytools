@@ -53,8 +53,31 @@ def missing_values_table(df):
     return mis_val_table_ren_columns
 
 
+
+# 特征分析
+def feature_analyse(df, col, bins=10):
+    if df[col].dtype != 'O':
+        col_band = col + '_band'
+        df[col_band] = pd.cut(df[col], bins).astype(str)
+        col_ana = col_band
+    else:
+        col_ana = col
+
+    print(df[['check_result', col_ana]].info())
+    pass_df = pd.DataFrame({'pass': df[df['check_result'] == 1][col_ana].value_counts()})
+    reject_df = pd.DataFrame({'reject': df[df['check_result'] == 0][col_ana].value_counts()})
+    all_df = pd.DataFrame({'all': df[col_ana].value_counts()})
+    analyse_df = all_df.merge(pass_df, how='outer', left_index=True, right_index=True)
+    analyse_df = analyse_df.merge(reject_df, how='outer', left_index=True, right_index=True)
+    analyse_df['pass_rate'] = analyse_df['pass'] / analyse_df['all']
+    analyse_df.sort_values(by='pass_rate', inplace=True, ascending=False)
+    print(analyse_df)
+    plt.plot(analyse_df['pass_rate'], 'bo')
+    plt.ylabel('Pass Rate')
+
+
 # to make output display better
-pd.set_option('display.max_columns', 50)
+pd.set_option('display.max_columns', 10)
 pd.set_option('display.max_rows', 50)
 pd.set_option('display.width', 1000)
 plt.rcParams['axes.labelsize'] = 14
@@ -71,14 +94,13 @@ DATA_ID = "学校数据.csv"
 DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("初始数据量: {}".format(df_alldata.shape))
-df = df_alldata.dropna(axis=1, how='all')
 
+df = df_alldata.dropna(axis=1, how='all')
 # 处理身份证号
 df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
 # 取可能有用的数据
-# 目前discount字段是用户下单通过后才生成的，无法使用。
-# 建议保存用户下单时的优惠金额，因为违约用户大概率是不计较优惠金额，
+# 目前discount字段是用户下单通过后才生成的，无法使用。建议保存用户下单时的优惠金额
 features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
             'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
@@ -305,28 +327,6 @@ for col in df.columns.values:
     if df[col].dtype == 'O':
         df[col].fillna(value='NODATA', inplace=True)
 df.fillna(value=0, inplace=True)
-
-
-# 特征分析
-def feature_analyse(df, col, bins=10):
-    if df[col].dtype != 'O':
-        col_band = col + '_band'
-        df[col_band] = pd.cut(df[col], bins).astype(str)
-        col_ana = col_band
-    else:
-        col_ana = col
-
-    print(df[['check_result', col_ana]].info())
-    pass_df = pd.DataFrame({'pass': df[df['check_result'] == 1][col_ana].value_counts()})
-    reject_df = pd.DataFrame({'reject': df[df['check_result'] == 0][col_ana].value_counts()})
-    all_df = pd.DataFrame({'all': df[col_ana].value_counts()})
-    analyse_df = all_df.merge(pass_df, how='outer', left_index=True, right_index=True)
-    analyse_df = analyse_df.merge(reject_df, how='outer', left_index=True, right_index=True)
-    analyse_df['pass_rate'] = analyse_df['pass'] / analyse_df['all']
-    analyse_df.sort_values(by='pass_rate', inplace=True, ascending=False)
-    print(analyse_df)
-    plt.plot(analyse_df['pass_rate'], 'bo')
-    plt.ylabel('Pass Rate')
 
 
 # feature_analyse(df, 'pay_num')
