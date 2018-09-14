@@ -1,17 +1,41 @@
-#!/usr/bin/env python 
-# -*- coding: utf-8 -*- 
-# @Time : 2018/8/20 17:48
-# @Author : yangpingyan@gmail.com
 
-# ML项目的完整流程
-# 1. 项目概述。
+# coding: utf-8
+
+# # 蜜宝大数据风控解决方案
+# 
+# ---
+# 
+# ## 会议主题：
+# 1. 审核大数据风控可行性。
+# 2. 工作计划。
+# 
+# 
+# ## 数据挖掘工作流程
+# 
+# 目前大数据风控做的第一件事是数据挖掘工作，数据挖掘的工作流程分下面七步完成：
+# 
+# 1. 目标或问题定义。
 # 2. 获取数据。
-# 3. 发现并可视化数据，发现规律。
-# 4. 为机器学习算法准备数据。
-# 5. 选择模型，进行训练。
-# 6. 微调模型。
-# 7. 给出解决方案。
-# 8. 部署、监控、维护系统。
+# 3. 数据分析。
+# 4. 数据清洗、特征处理。
+# 5. 机器学习训练、预测。
+# 6. 结果评估和报告。
+# 7. 总结。
+# 
+# 
+# ## 目标或问题定义
+# 
+# 当我们面对客户提交的租赁设备订单请求时，我们有2个核心问题需要解决，一个是这个客户信用如何，是不是来欺诈的；另一个是这个客户是信用良好客户，但我们不确定这个设备的价格是否超出他所能承受的范围。因此，我们的任务目标是两个：
+# 1. 客户分类。把客户分成审核通过和审核拒绝两类。
+# 2. 确定客户信用额度。
+# 接下来的数据挖掘工作是实现客户分类的。客户信用额度会在工作计划中讨论。
+
+# ## 开始数据挖掘工作
+# 先做些代码初始化
+
+# In[1]:
+
+
 
 import csv
 import json
@@ -63,7 +87,8 @@ def feature_analyse(df, col, bins=10):
     else:
         col_ana = col
 
-    print(df[['check_result', col_ana]].info())
+    print(df[col_ana].describe())
+    print("-------------------------------------------")
     pass_df = pd.DataFrame({'pass': df[df['check_result'] == 1][col_ana].value_counts()})
     reject_df = pd.DataFrame({'reject': df[df['check_result'] == 0][col_ana].value_counts()})
     all_df = pd.DataFrame({'all': df[col_ana].value_counts()})
@@ -75,11 +100,11 @@ def feature_analyse(df, col, bins=10):
     plt.plot(analyse_df['pass_rate'], 'bo')
     plt.ylabel('Pass Rate')
 
-
+    
 # to make output display better
 pd.set_option('display.max_columns', 10)
-pd.set_option('display.max_rows', 50)
-pd.set_option('display.width', 1000)
+pd.set_option('display.max_rows', 1000)
+pd.set_option('display.width', 2000)
 plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
@@ -87,6 +112,14 @@ plt.rcParams['font.sans-serif'] = ['Simhei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 # read large csv file
 csv.field_size_limit(100000000)
+
+
+# ## 获取数据
+# 
+# 数据已经从数据库中导出成csv文件，直接读取即可。后面数据的读取更改为从备份数据库直接读取，不仅可以保证数据的完整，还可以避免重名字段处理的麻烦。
+
+# In[2]:
+
 
 # Datasets info
 PROJECT_ROOT_DIR = os.getcwd()
@@ -96,9 +129,36 @@ df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("初始数据量: {}".format(df_alldata.shape))
 
 
+# ## 数据简单计量分析
+# 
+
+# In[3]:
+
+
+# 首5行数据
+df_alldata.head()
+
+
+# In[4]:
+
+
+# 最后5行数据
+df_alldata.tail()
+
+
+# In[5]:
+
+
+# 所有特征值
+df_alldata.columns.values
+
+
+# In[6]:
+
+
+# 我们并不需要所有的特征值，筛选出一些可能有用的特质值
 df = df_alldata.dropna(axis=1, how='all')
-# 取可能有用的数据
-# 目前discount字段是用户下单通过后才生成的，无法使用。建议保存用户下单时的优惠金额
+
 features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
             'freeze_money', 'ip', 'releted', 'order_type', 'source', 'disposable_payment_discount',
@@ -110,39 +170,118 @@ df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
 
+# In[7]:
 
+
+# 数据的起止时间段
+print("数据起止时间段：{} -- {}".format(df['create_time'].iloc[0], df['create_time'].iloc[-1]))
+
+
+# In[8]:
+
+
+# 订单审核结果分类
+df['check_result'].value_counts()
+
+
+# In[9]:
+
+
+# 订单状态
+df['state'].value_counts()
+
+
+# In[10]:
+
+
+# 查看非空值个数， 数据类型
 df.info()
-# Number of unique classes in each object column
-df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
-df.describe()
-df.describe(include=['O'])
-# Missing values statistics
-missing_values = missing_values_table(df)
-missing_values.head(20)
-# Number of each type of column
+
+
+# In[11]:
+
+
 df.dtypes.value_counts()
+
+
+# In[12]:
+
+
+# 缺失值比率
+missing_values_table(df)
+
+
+# In[13]:
+
+
+# 特征中不同值得个数
+df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
+
+
+# In[14]:
+
+
+#  数值描述
+df.describe()
+
+
+# In[15]:
+
+
+# 类别描述
+df.describe(include='O')
+
+
+# In[16]:
+
+
+# 开始清理数据
+print("初始数据量: {}".format(df.shape))
+
+
+# In[17]:
 
 
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
 print("去除无身份证号后的数据量: {}".format(df.shape))
 
+
+# In[18]:
+
+
 # 取有审核结果的数据
 df = df[df['check_result'].str.contains('SUCCESS|FAILURE', na=False)]
 print("去除未经机审用户后的数据量: {}".format(df.shape))
+
+
+# In[19]:
+
 
 # 去除测试数据和内部员工数据
 df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
 df = df[df['check_remark'].str.contains('测试|内部员工') != True]
 print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
 
-# 去掉用户自己取消的数据
+
+# In[20]:
+
+
+# 去掉用户自己取消的数据   问题：即使用户取消了，仍然会有审核？？
 df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
+
+
+# In[21]:
+
 
 # 去除身份证重复的订单：
 df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
 print("去除身份证重复的订单后的数据量: {}".format(df.shape))
+
+
+# In[22]:
+
 
 # 所有字符串变成大写字母
 objs_df = pd.DataFrame({"isobj": pd.Series(df.dtypes == 'object')})
@@ -195,125 +334,14 @@ for x in df['zmxy_score']:
 df['zmf_score'] = zmf
 df['xbf_score'] = xbf
 df['zmf_score'][df['zmf_score'] == 0] = 600
-df['xbf_score'][df['xbf_score'] == 0] = df['xbf_score'].value_counts().index[0]
+df['xbf_score'][df['xbf_score'] == 0] = 87.6
 
 # 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
-# 取手机号码前三位
-df['phone'] = df['phone'].map(lambda x: x[0:3])
 
-
-
-# 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
-#     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
-#     cost = first_pay （短租），
-#     cost = 总租赁天数*每日租金（长租）
-# df['pay'] = df['first_pay'] * df['lease_term']
-# df[['pay', 'first_pay', 'lease_term', 'daily_rent', 'pay_num', 'accident_insurance']]
-# check_pass = pd.DataFrame({'pass': df[df['check_result'] == 1]['create_hour'].value_counts()})
-# check_all = pd.DataFrame({'all': df['create_hour'].value_counts()})
-# check_hour = check_pass.merge(check_all, how='outer', left_index=True, right_index=True)
-# check_hour['pass_rate'] = check_hour['pass'] / check_hour['all'] * 100
-# plt.plot(check_hour['pass_rate'], 'yo')
-
-
-# 处理detail_json
-'''
-# 展开detail_json中所有的字典
-def expand_dict(dict_in):
-    dict_out = dict()
-    for k, v in dict_in.items():
-        # print(k, v)
-        if isinstance(v, dict):
-            dict_out.update(expand_dict(v))
-        elif isinstance(v, list):
-            for d in v:
-                if isinstance(d, dict):
-                    dict_out.update(expand_dict(d))
-                else:
-                    dict_out[k] = v
-        else:
-            dict_out[k] = v
-    return dict_out
-
-
-dict_out = dict()
-for val in df['detail_json']:
-    if (isinstance(val, str)):
-        dict_out.update(expand_dict(json.loads(val)))
-
-detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_type_display_name',
-               'fraud_type_display_name', 'evidence_time', 'risk_level', 'fraud_type', 'value', 'type', 'data',
-               'detail', 'count', 'dimension', 'platform_count', 'final_decision', 'discredit_times', 'overdue_time',
-               'overdue_amount_range', 'fuzzy_id_number', 'fuzzy_name', 'overdue_day_range', 'high_risk_areas',
-               'hit_list_datas', 'overdue_count', 'execute_subject', 'execute_court', 'case_code', 'executed_name',
-               'case_date', 'evidence_court', 'execute_status', 'term_duty', 'gender', 'carry_out', 'execute_code',
-               'province', 'specific_circumstances', 'age', 'finalDecision', 'finalScore', 'memo', 'ruleId', 'ruleName',
-               'template', 'riskType', 'strategyMode', 'strategyName', 'strategyScore', 'firstType', 'grade',
-               'secondType', 'name', 'rejectValue', 'reviewValue', 'true_ip_address', 'mobile_address',
-               'id_card_address', 'isp', 'latitude', 'position', 'longitude', 'error', 'proxyProtocol', 'port',
-               'proxyType']
-'''
-# for col in detail_cols:
-#     df[col] = df['detail_json'].apply(lambda x: json.loads(x).get(col) if isinstance(x, str) else None)
-#
-# detail_cols = ['INFOANALYSIS', 'RENT']
-# for col in detail_cols:
-#     df[col] = df['result_desc'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-# detail_cols = ['geotrueip_info', 'device_info', 'address_detect', 'geoip_info']
-# for col in detail_cols:
-#     df[col] = df['INFOANALYSIS'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-# detail_cols = ['risk_items', 'final_score', 'final_decision']
-# for col in detail_cols:
-#     df[col] = df['RENT'].apply(lambda x: x.get(col) if isinstance(x, dict) else None)
-#
-# df.drop(['result_desc', 'INFOANALYSIS', 'RENT'], axis=1, errors='ignore', inplace=True)
-#
-# cols = []
-# for detail in df['RENT']:
-#     if isinstance(detail, dict):
-#         try:
-#             cols.extend(list(detail.keys()))
-#         except:
-#             print(detail)
-#             break
-#
-# cols = list(set(cols))
-# print(cols)
-#
-# cols = []
-# for detail in df['result_desc']:
-#     if isinstance(detail, str):
-#         try:
-#             detail_dict = json.loads(detail)
-#             cols.extend(list(detail_dict.keys()))
-#         except:
-#             print(detail)
-#             # break
-#
-# cols = list(set(cols))
-# print(cols)
-
-
-# 特征处空值处理
-# channel -随机处理
-#  pay_type# ip# zmxy_score# card_id# contact# phone# provice# city# regoin# receive_address
-# emergency_contact_name# phone_book# emergency_contact_phone# emergency_contact_relation# type.1# detail_json
-# df.loc[df['discount'].isnull(), 'discount'] = 0
-# df.loc[df['added_service'].isnull(), 'added_service'] = 0
-# df.loc[df['first_pay'].isnull(), 'first_pay'] = 0
-
-
-# df['card_id'].value_counts()
-# len(df[df['card_id'].isnull()])
-# for col in df.columns:
-#     if len(df[df[col].isnull()]) != 0:
-#         print(col)
-
-# df.sort_values(by=['merchant_id'], inplace=True)
-
+# In[23]:
 
 
 features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
@@ -327,28 +355,62 @@ for col in df.columns.values:
 df.fillna(value=0, inplace=True)
 
 
-# feature_analyse(df, 'pay_num')
+# In[24]:
+
+
+feature_analyse(df, 'result')
+
+
+# In[25]:
+
+
+feature_analyse(df, 'pay_num')
+
+
+# In[26]:
+
+
+feature_analyse(df, 'channel')
+
+
+# In[27]:
+
 
 # 芝麻分分类
 bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
 df['zmf_score_band'] = pd.cut(df['zmf_score'], bins, labels=False)
-df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
-                                                                                                      ascending=False)
+df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result', ascending=False)
+
+
+# In[28]:
+
 
 # 小白分分类
 bins = pd.IntervalIndex.from_tuples([(0, 80), (80, 90), (90, 100), (100, 200)])
 df['xbf_score_band'] = pd.cut(df['xbf_score'], bins, labels=False)
-df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
+df[['xbf_score_band', 'check_result']].groupby(['xbf_score_band'], as_index=False).mean().sort_values(by='check_result',
                                                                                                       ascending=False)
+
+
+# In[29]:
+
 
 # 年龄分类
 bins = pd.IntervalIndex.from_tuples([(0, 18), (18, 24), (24, 30), (30, 40), (40, 100)])
 df['age_band'] = pd.cut(df['age'], bins, labels=False)
-df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',
-                                                                                          ascending=False)
-df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).sum()
+df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
+
+
+# In[32]:
+
+
 # 下单时间分类
 df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
+df[['create_hour_band', 'check_result']].groupby(['create_hour_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
+
+
+# In[33]:
+
 
 features = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'type', 'order_type',
             'source', 'phone_book', 'old_level', 'sex', 'create_hour', 'age_band', 'zmf_score_band',
@@ -359,15 +421,19 @@ for feature in features:
     df[feature] = LabelEncoder().fit_transform(df[feature])
 
 print("保存的数据量: {}".format(df.shape))
-df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
-# Pearson Correlation Heatmap
+
+# In[ ]:
+
+
 plt.figure(figsize=(14, 12))
 plt.title('Pearson Correlation of Features', y=1.05, size=15)
 sns.heatmap(df.astype(float).corr(), linewidths=0.1, vmax=1.0,
             square=True, cmap=plt.cm.RdBu, linecolor='white', annot=True)
 
-from pandas.plotting import scatter_matrix
+
+# In[34]:
 
 
-print("Missiong Complete!")
+df
+
