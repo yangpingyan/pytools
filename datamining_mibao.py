@@ -95,21 +95,21 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("初始数据量: {}".format(df_alldata.shape))
 
-df = df_alldata.dropna(axis=1, how='all')
-# 处理身份证号
-df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
 
+df = df_alldata.dropna(axis=1, how='all')
 # 取可能有用的数据
 # 目前discount字段是用户下单通过后才生成的，无法使用。建议保存用户下单时的优惠金额
 features = ['create_time', 'goods_name', 'cost', 'discount', 'pay_num', 'added_service', 'first_pay', 'channel',
             'pay_type', 'merchant_id', 'goods_type', 'lease_term', 'daily_rent', 'accident_insurance', 'type',
-            'freeze_money', 'ip', 'releted', 'order_type', 'delivery_way', 'source', 'disposable_payment_discount',
+            'freeze_money', 'ip', 'releted', 'order_type', 'source', 'disposable_payment_discount',
             'disposable_payment_enabled', 'lease_num', 'original_daily_rent', 'deposit', 'zmxy_score', 'card_id',
             'contact', 'phone', 'provice', 'city', 'regoin', 'receive_address', 'emergency_contact_name', 'phone_book',
             'emergency_contact_phone', 'emergency_contact_relation', 'type.1', 'detail_json', 'price', 'old_level']
 result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
+
+
 
 df.info()
 # Number of unique classes in each object column
@@ -122,6 +122,7 @@ missing_values.head(20)
 # Number of each type of column
 df.dtypes.value_counts()
 
+
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
 print("去除无身份证号后的数据量: {}".format(df.shape))
@@ -129,14 +130,6 @@ print("去除无身份证号后的数据量: {}".format(df.shape))
 # 取有审核结果的数据
 df = df[df['check_result'].str.contains('SUCCESS|FAILURE', na=False)]
 print("去除未经机审用户后的数据量: {}".format(df.shape))
-
-# 去除只有唯一值的列
-cols = []
-for col in df.columns:
-    if len(df[col].unique()) <= 1:
-        cols.append(col)
-df.drop(cols, axis=1, errors='ignore', inplace=True)
-print("去除特征值中只有唯一值后的数据量: {}".format(df.shape))
 
 # 去除测试数据和内部员工数据
 df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
@@ -151,6 +144,13 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
 print("去除身份证重复的订单后的数据量: {}".format(df.shape))
 
+# 所有字符串变成大写字母
+objs_df = pd.DataFrame({"isobj": pd.Series(df.dtypes == 'object')})
+df[objs_df[objs_df['isobj'] == True].index.values].applymap(lambda x: x.upper() if isinstance(x, str) else x)
+
+# 隐藏身份证信息
+df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
+
 # 处理running_overdue 和 return_overdue 的逾期 的 check_result
 df.loc[df['state'].str.contains('overdue') == True, 'check_result'] = 'FAILURE'
 df['check_result'] = df['check_result'].apply(lambda x: 1 if 'SUCCESS' in x else 0)
@@ -161,10 +161,51 @@ df['phone_book'][df['phone_book'].isnull()] = 0
 # 根据create_time 按时间段分类
 df['create_hour'] = df['create_time'].map(lambda x: int(x[-8:-6]))
 df['create_time_cat'] = df['create_hour'].map(lambda x: 0 if 0 < x < 7 else 1)
-
+# 同盾白骑士审核结果统一
+df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else 'NODATA')
+df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
 # 有emergency_contact_phone的赋值成1， 空的赋值成0
 df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
 df['emergency_contact_phone'][df['emergency_contact_phone'].isnull()] = 0
+
+
+# 处理芝麻信用分 '>600' 更改成600
+row = 0
+zmf = [0] * len(df)
+xbf = [0] * len(df)
+for x in df['zmxy_score']:
+    # print(x, row)
+    if isinstance(x, str):
+        if '/' in x:
+            score = x.split('/')
+            xbf[row] = 0 if score[0] == '' else (float(score[0]))
+            zmf[row] = 0 if score[1] == '' else (float(score[1]))
+            # print(score, row)
+        elif '>' in x:
+            zmf[row] = 600
+        else:
+            score = float(x)
+            if score <= 200:
+                xbf[row] = (score)
+            else:
+                zmf[row] = (score)
+
+    row += 1
+
+df['zmf_score'] = zmf
+df['xbf_score'] = xbf
+df['zmf_score'][df['zmf_score'] == 0] = 600
+df['xbf_score'][df['xbf_score'] == 0] = 87.6
+
+# 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
+df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
+df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
+
+# 取手机号码前三位
+df['phone'] = df['phone'].map(lambda x: x[0:3])
+
+
+
 # 服务费first_pay = 租赁天数*每日租金 +保险和增值费。（短租）
 #     first_pay = 每期天数*每日租金 + 保险和增值费。 （长租）
 #     cost = first_pay （短租），
@@ -179,13 +220,7 @@ df['emergency_contact_phone'][df['emergency_contact_phone'].isnull()] = 0
 
 
 # 处理detail_json
-df['result'] = df['result'].map(lambda x: x.upper() if isinstance(x, str) else 'NODATA')
-df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
-
 '''
-
-
-
 # 展开detail_json中所有的字典
 def expand_dict(dict_in):
     dict_out = dict()
@@ -277,46 +312,9 @@ detail_cols = ['success', 'final_score', 'score', 'decision', 'risk_name', 'hit_
 #     if len(df[df[col].isnull()]) != 0:
 #         print(col)
 
-# 处理芝麻信用分 '>600' 更改成600
-row = 0
-zmf = [0] * len(df)
-xbf = [0] * len(df)
-for x in df['zmxy_score']:
-    # print(x, row)
-    if isinstance(x, str):
-        if '/' in x:
-            score = x.split('/')
-            xbf[row] = 0 if score[0] == '' else (float(score[0]))
-            zmf[row] = 0 if score[1] == '' else (float(score[1]))
-            # print(score, row)
-        elif '>' in x:
-            zmf[row] = 600
-        else:
-            score = float(x)
-            if score <= 200:
-                xbf[row] = (score)
-            else:
-                zmf[row] = (score)
-
-    row += 1
-
-df['zmf_score'] = zmf
-df['xbf_score'] = xbf
-df['zmf_score'][df['zmf_score'] == 0] = 600
-df['xbf_score'][df['xbf_score'] == 0] = 87.6
-
-# 根据身份证号增加性别和年龄 年龄的计算需根据订单创建日期计算
-df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
-df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
-
-# 取手机号码前三位
-df['phone'] = df['phone'].map(lambda x: x[0:3])
-
 # df.sort_values(by=['merchant_id'], inplace=True)
 
-# df.dropna(subset=['zmf_score', 'xbf_score'], inplace=True)
-# df = df[df['xbf_score'] > 0]
-# df = df[df['zmf_score'] > 0]
+
 
 features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
                 'source', 'phone_book', 'emergency_contact_phone', 'old_level', 'create_hour', 'sex', ]
