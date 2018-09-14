@@ -401,7 +401,7 @@ df['age_band'] = pd.cut(df['age'], bins, labels=False)
 df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
 
 
-# In[32]:
+# In[30]:
 
 
 # 下单时间分类
@@ -409,7 +409,7 @@ df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
 df[['create_hour_band', 'check_result']].groupby(['create_hour_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
 
 
-# In[33]:
+# In[31]:
 
 
 features = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'type', 'order_type',
@@ -421,19 +421,15 @@ for feature in features:
     df[feature] = LabelEncoder().fit_transform(df[feature])
 
 print("保存的数据量: {}".format(df.shape))
+df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
 
-# In[ ]:
+# In[32]:
 
 
+# 查看各特征关联度
 plt.figure(figsize=(14, 12))
 plt.title('Pearson Correlation of Features', y=1.05, size=15)
 sns.heatmap(df.astype(float).corr(), linewidths=0.1, vmax=1.0,
             square=True, cmap=plt.cm.RdBu, linecolor='white', annot=True)
-
-
-# In[34]:
-
-
-df
 
