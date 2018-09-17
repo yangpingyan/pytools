@@ -28,3 +28,5 @@ autokeras
 ipython
 xlrd
 seaborn
+xgboost
+

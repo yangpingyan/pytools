@@ -481,24 +481,26 @@ print("ML初始数据量: {}".format(df.shape))
 x = df.drop(['check_result'], axis=1)
 y = df['check_result']
 ## Splitting the dataset into the Training set and Test set
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 
 # 保存所有模型得分
-def add_score(score_df, name, runtime, x_test, y_test):
+def add_score(score_df, name, runtime, y_pred, y_test):
     score_df[name] = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred),
                       f1_score(y_test, y_pred), runtime, confusion_matrix(y_test, y_pred)]
 
     return score_df
 
 
-rnd_clf = RandomForestClassifier()
+rnd_clf = RandomForestClassifier(random_state=0)
 
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
 
 starttime = time.clock()
 rnd_clf.fit(x_train, y_train)
 y_pred = rnd_clf.predict(x_test)
-add_score(score_df, rnd_clf.__class__.__name__, time.clock() - starttime, x_test, y_test)
+add_score(score_df, rnd_clf.__class__.__name__, time.clock() - starttime, y_pred, y_test)
+y_train_pred = rnd_clf.predict(x_train)
+add_score(score_df, rnd_clf.__class__.__name__, time.clock() - starttime, y_train_pred, y_train)
 
 print(score_df)
 
