@@ -34,7 +34,11 @@ from sklearn.metrics import precision_recall_curve, precision_score, recall_scor
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.model_selection import KFold
 from xgboost import XGBClassifier
+import lightgbm as lgb
 
+# Suppress warnings
+import warnings
+warnings.filterwarnings('ignore')
 # to make output display better
 pd.set_option('display.max_columns', 50)
 pd.set_option('display.max_rows', 20)
@@ -98,8 +102,9 @@ linear_svc = LinearSVC()
 decision_tree = DecisionTreeClassifier()
 rnd_clf = RandomForestClassifier()
 xg_clf = XGBClassifier()
+lgbm = lgb.LGBMClassifier()
 
-clf_list = [xg_clf, knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, linear_svc]
+clf_list = [lgbm, xg_clf, knn_clf, log_clf, sgd_clf, decision_tree, rnd_clf, gaussian_clf, linear_svc]
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
 for clf in clf_list:
     starttime = time.clock()

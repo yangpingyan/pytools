@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # # 蜜宝大数据风控解决方案
@@ -34,7 +33,6 @@
 # 先做些代码初始化
 
 # In[1]:
-
 
 
 import csv
@@ -77,7 +75,6 @@ def missing_values_table(df):
     return mis_val_table_ren_columns
 
 
-
 # 特征分析
 def feature_analyse(df, col, bins=10):
     if df[col].dtype != 'O':
@@ -100,7 +97,11 @@ def feature_analyse(df, col, bins=10):
     plt.plot(analyse_df['pass_rate'], 'bo')
     plt.ylabel('Pass Rate')
 
-    
+
+# Suppress warnings
+import warnings
+
+warnings.filterwarnings('ignore')
 # to make output display better
 pd.set_option('display.max_columns', 10)
 pd.set_option('display.max_rows', 1000)
@@ -112,7 +113,6 @@ plt.rcParams['font.sans-serif'] = ['Simhei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 # read large csv file
 csv.field_size_limit(100000000)
-
 
 # ## 获取数据
 # 
@@ -128,7 +128,6 @@ DATASETS_PATH = os.path.join(PROJECT_ROOT_DIR, "datasets", DATA_ID)
 df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("初始数据量: {}".format(df_alldata.shape))
 
-
 # ## 数据简单计量分析
 # 
 
@@ -138,20 +137,17 @@ print("初始数据量: {}".format(df_alldata.shape))
 # 首5行数据
 df_alldata.head()
 
-
 # In[4]:
 
 
 # 最后5行数据
 df_alldata.tail()
 
-
 # In[5]:
 
 
 # 所有特征值
 df_alldata.columns.values
-
 
 # In[6]:
 
@@ -169,13 +165,11 @@ result = ['state', 'cancel_reason', 'check_result', 'check_remark', 'result']
 df = df[result + features]
 print("筛选出所有可能有用特征后的数据量: {}".format(df.shape))
 
-
 # In[7]:
 
 
 # 数据的起止时间段
 print("数据起止时间段：{} -- {}".format(df['create_time'].iloc[0], df['create_time'].iloc[-1]))
-
 
 # In[8]:
 
@@ -183,13 +177,11 @@ print("数据起止时间段：{} -- {}".format(df['create_time'].iloc[0], df['c
 # 订单审核结果分类
 df['check_result'].value_counts()
 
-
 # In[9]:
 
 
 # 订单状态
 df['state'].value_counts()
-
 
 # In[10]:
 
@@ -197,12 +189,10 @@ df['state'].value_counts()
 # 查看非空值个数， 数据类型
 df.info()
 
-
 # In[11]:
 
 
 df.dtypes.value_counts()
-
 
 # In[12]:
 
@@ -210,13 +200,11 @@ df.dtypes.value_counts()
 # 缺失值比率
 missing_values_table(df)
 
-
 # In[13]:
 
 
 # 特征中不同值得个数
 df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
-
 
 # In[14]:
 
@@ -224,20 +212,17 @@ df.select_dtypes('object').apply(pd.Series.nunique, axis=0)
 #  数值描述
 df.describe()
 
-
 # In[15]:
 
 
 # 类别描述
 df.describe(include='O')
 
-
 # In[16]:
 
 
 # 开始清理数据
 print("初始数据量: {}".format(df.shape))
-
 
 # In[17]:
 
@@ -246,14 +231,12 @@ print("初始数据量: {}".format(df.shape))
 df.dropna(subset=['card_id'], inplace=True)
 print("去除无身份证号后的数据量: {}".format(df.shape))
 
-
 # In[18]:
 
 
 # 取有审核结果的数据
 df = df[df['check_result'].str.contains('SUCCESS|FAILURE', na=False)]
 print("去除未经机审用户后的数据量: {}".format(df.shape))
-
 
 # In[19]:
 
@@ -263,14 +246,12 @@ df = df[df['cancel_reason'].str.contains('测试|内部员工') != True]
 df = df[df['check_remark'].str.contains('测试|内部员工') != True]
 print("去除测试数据和内部员工后的数据量: {}".format(df.shape))
 
-
 # In[20]:
 
 
 # 去掉用户自己取消的数据   问题：即使用户取消了，仍然会有审核？？
 df = df[df['state'].str.match('user_canceled') != True]
 print("去除用户自己取消后的数据量: {}".format(df.shape))
-
 
 # In[21]:
 
@@ -279,13 +260,14 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
 print("去除身份证重复的订单后的数据量: {}".format(df.shape))
 
-
 # In[22]:
 
+df['channel'].value_counts()
 
 # 所有字符串变成大写字母
 objs_df = pd.DataFrame({"isobj": pd.Series(df.dtypes == 'object')})
-df[objs_df[objs_df['isobj'] == True].index.values].applymap(lambda x: x.upper() if isinstance(x, str) else x)
+df[objs_df[objs_df['isobj'] == True].index.values] = df[objs_df[objs_df['isobj'] == True].index.values].applymap(
+    lambda x: x.upper() if isinstance(x, str) else x)
 
 # 隐藏身份证信息
 df['card_id'] = df['card_id'].map(lambda x: x.replace(x[10:16], '******') if isinstance(x, str) else x)
@@ -306,7 +288,6 @@ df['result'][df['result'].str.match('ACCEPT')] = 'PASS'
 # 有emergency_contact_phone的赋值成1， 空的赋值成0
 df['emergency_contact_phone'][df['emergency_contact_phone'].notnull()] = 1
 df['emergency_contact_phone'][df['emergency_contact_phone'].isnull()] = 0
-
 
 # 处理芝麻信用分 '>600' 更改成600
 row = 0
@@ -340,7 +321,6 @@ df['xbf_score'][df['xbf_score'] == 0] = 87.6
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
-
 # In[23]:
 
 
@@ -354,24 +334,20 @@ for col in df.columns.values:
         df[col].fillna(value='NODATA', inplace=True)
 df.fillna(value=0, inplace=True)
 
-
 # In[24]:
 
 
 feature_analyse(df, 'result')
-
 
 # In[25]:
 
 
 feature_analyse(df, 'pay_num')
 
-
 # In[26]:
 
 
 feature_analyse(df, 'channel')
-
 
 # In[27]:
 
@@ -379,8 +355,8 @@ feature_analyse(df, 'channel')
 # 芝麻分分类
 bins = pd.IntervalIndex.from_tuples([(0, 600), (600, 700), (700, 800), (800, 1000)])
 df['zmf_score_band'] = pd.cut(df['zmf_score'], bins, labels=False)
-df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result', ascending=False)
-
+df[['zmf_score_band', 'check_result']].groupby(['zmf_score_band'], as_index=False).mean().sort_values(by='check_result',
+                                                                                                      ascending=False)
 
 # In[28]:
 
@@ -391,23 +367,22 @@ df['xbf_score_band'] = pd.cut(df['xbf_score'], bins, labels=False)
 df[['xbf_score_band', 'check_result']].groupby(['xbf_score_band'], as_index=False).mean().sort_values(by='check_result',
                                                                                                       ascending=False)
 
-
 # In[29]:
 
 
 # 年龄分类
 bins = pd.IntervalIndex.from_tuples([(0, 18), (18, 24), (24, 30), (30, 40), (40, 100)])
 df['age_band'] = pd.cut(df['age'], bins, labels=False)
-df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
-
+df[['age_band', 'check_result']].groupby(['age_band'], as_index=False).mean().sort_values(by='check_result',
+                                                                                          ascending=False)
 
 # In[30]:
 
 
 # 下单时间分类
 df['create_hour_band'] = pd.cut(df['create_hour'], 5, labels=False)
-df[['create_hour_band', 'check_result']].groupby(['create_hour_band'], as_index=False).mean().sort_values(by='check_result',ascending=False)
-
+df[['create_hour_band', 'check_result']].groupby(['create_hour_band'], as_index=False).mean().sort_values(
+    by='check_result', ascending=False)
 
 # In[31]:
 
@@ -423,7 +398,6 @@ for feature in features:
 print("保存的数据量: {}".format(df.shape))
 df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
 
-
 # In[32]:
 
 
@@ -432,7 +406,6 @@ plt.figure(figsize=(14, 12))
 plt.title('Pearson Correlation of Features', y=1.05, size=15)
 sns.heatmap(df.astype(float).corr(), linewidths=0.1, vmax=1.0,
             square=True, cmap=plt.cm.RdBu, linecolor='white', annot=True)
-
 
 # ## 机器学习训练、预测
 
@@ -483,6 +456,7 @@ y = df['check_result']
 ## Splitting the dataset into the Training set and Test set
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 
+
 # 保存所有模型得分
 def add_score(score_df, name, runtime, y_pred, y_test):
     score_df[name] = [accuracy_score(y_test, y_pred), precision_score(y_test, y_pred), recall_score(y_test, y_pred),
@@ -491,19 +465,25 @@ def add_score(score_df, name, runtime, y_pred, y_test):
     return score_df
 
 
-rnd_clf = RandomForestClassifier(random_state=0)
-
 score_df = pd.DataFrame(index=['accuracy', 'precision', 'recall', 'f1', 'runtime', 'confusion_matrix'])
 
+rnd_clf = RandomForestClassifier(random_state=0)
 starttime = time.clock()
 rnd_clf.fit(x_train, y_train)
 y_pred = rnd_clf.predict(x_test)
 add_score(score_df, rnd_clf.__class__.__name__, time.clock() - starttime, y_pred, y_test)
 y_train_pred = rnd_clf.predict(x_train)
-add_score(score_df, rnd_clf.__class__.__name__, time.clock() - starttime, y_train_pred, y_train)
+add_score(score_df, rnd_clf.__class__.__name__ + '_Train', time.clock() - starttime, y_train_pred, y_train)
+
+xgb_clf = XGBClassifier(random_state=0)
+starttime = time.clock()
+xgb_clf.fit(x_train, y_train)
+y_pred = xgb_clf.predict(x_test)
+add_score(score_df, xgb_clf.__class__.__name__, time.clock() - starttime, y_pred, y_test)
+y_train_pred = xgb_clf.predict(x_train)
+add_score(score_df, xgb_clf.__class__.__name__ + '_Train', time.clock() - starttime, y_train_pred, y_train)
 
 print(score_df)
-
 
 # ## 评估结果
 # accuracy： 97.5%  --- 预测正确的个数占样本总数的比率
@@ -520,7 +500,7 @@ plt.ylabel("Precision(TPR)", fontsize=16)
 plt.axis([0, 1, 0, 1])
 
 clf = rnd_clf
-y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)    
+y_train_pred = cross_val_predict(clf, x_train, y_train, cv=3)
 y_probas = cross_val_predict(clf, x_train, y_train, cv=3, method="predict_proba", n_jobs=-1)
 y_scores = y_probas[:, 1]  # score = proba of positive class 
 precisions, recalls, thresholds = precision_recall_curve(y_train, y_scores)
@@ -532,7 +512,6 @@ plt.plot(fpr, tpr, linewidth=1, label="ROC")
 plt.title("ROC and PR 曲线图")
 plt.legend()
 plt.show()
-
 
 # ## 总结
 # 1. 机器学习能洞察复杂问题和大量数据，发现内在规律，帮助我们做好数据挖掘方面的工作。
@@ -546,4 +525,4 @@ plt.show()
 #         b. 参考同类型行业，借鉴他人经验，增加相关特征
 #         c. 增加模型预测能力，ROC分数达到0.96以上， 预测准确度达到98.5%
 #         d. 增加客户信用额度字段。如何确定客户额度方案未知。
-#     
+#
