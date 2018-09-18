@@ -1,18 +1,18 @@
 # coding: utf-8
 
 # # 蜜宝大数据风控解决方案
-# 
+#
 # ---
-# 
+#
 # ## 会议主题：
 # 1. 审核大数据风控可行性。
 # 2. 工作计划。
-# 
-# 
+#
+#
 # ## 数据挖掘工作流程
-# 
+#
 # 目前大数据风控做的第一件事是数据挖掘工作，数据挖掘的工作流程分下面七步完成：
-# 
+#
 # 1. 目标或问题定义。
 # 2. 获取数据。
 # 3. 数据分析。
@@ -20,10 +20,10 @@
 # 5. 机器学习训练、预测。
 # 6. 结果评估和报告。
 # 7. 总结。
-# 
-# 
+#
+#
 # ## 目标或问题定义
-# 
+#
 # 当我们面对客户提交的租赁设备订单请求时，我们有2个核心问题需要解决，一个是这个客户信用如何，是不是来欺诈的；另一个是这个客户是信用良好客户，但我们不确定这个设备的价格是否超出他所能承受的范围。因此，我们的任务目标是两个：
 # 1. 客户分类。把客户分成审核通过和审核拒绝两类。
 # 2. 确定客户信用额度。
@@ -45,7 +45,8 @@ from matplotlib.colors import ListedColormap
 import time
 import os
 from sklearn.preprocessing import LabelEncoder
-
+# Suppress warnings
+import warnings
 
 def missing_values_table(df):
     # Total missing values
@@ -76,10 +77,10 @@ def missing_values_table(df):
 
 
 # 特征分析
-def feature_analyse(df, col, bins=10):
+def feature_analyse(df, col):
     if df[col].dtype != 'O':
         col_band = col + '_band'
-        df[col_band] = pd.cut(df[col], bins).astype(str)
+        df[col_band] = pd.cut(df[col], len(df)).astype(str)
         col_ana = col_band
     else:
         col_ana = col
@@ -98,8 +99,16 @@ def feature_analyse(df, col, bins=10):
     plt.ylabel('Pass Rate')
 
 
-# Suppress warnings
-import warnings
+# KDE plot
+def feature_kdeplot(df, feature):
+    sns.kdeplot(df.loc[df['check_result'] == 0, feature], label = 'reject')
+    sns.kdeplot(df.loc[df['check_result'] == 1, feature], label = 'pass')
+
+    plt.xlabel(feature)
+    plt.ylabel('Density')
+    plt.title('Distribution of ' + feature)
+
+
 
 warnings.filterwarnings('ignore')
 # to make output display better
@@ -115,7 +124,7 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 csv.field_size_limit(100000000)
 
 # ## 获取数据
-# 
+#
 # 数据已经从数据库中导出成csv文件，直接读取即可。后面数据的读取更改为从备份数据库直接读取，不仅可以保证数据的完整，还可以避免重名字段处理的麻烦。
 
 # In[2]:
@@ -129,7 +138,7 @@ df_alldata = pd.read_csv(DATASETS_PATH, encoding='utf-8', engine='python')
 print("初始数据量: {}".format(df_alldata.shape))
 
 # ## 数据简单计量分析
-# 
+#
 
 # In[3]:
 
@@ -224,8 +233,6 @@ df.describe(include='O')
 # 开始清理数据
 print("初始数据量: {}".format(df.shape))
 
-# In[17]:
-
 
 # 丢弃身份证号为空的数据
 df.dropna(subset=['card_id'], inplace=True)
@@ -259,10 +266,6 @@ print("去除用户自己取消后的数据量: {}".format(df.shape))
 # 去除身份证重复的订单：
 df.drop_duplicates(subset=['card_id'], keep='last', inplace=True)
 print("去除身份证重复的订单后的数据量: {}".format(df.shape))
-
-# In[22]:
-
-df['channel'].value_counts()
 
 # 所有字符串变成大写字母
 objs_df = pd.DataFrame({"isobj": pd.Series(df.dtypes == 'object')})
@@ -321,8 +324,8 @@ df['xbf_score'][df['xbf_score'] == 0] = 87.6
 df['age'] = df['card_id'].map(lambda x: 2018 - int(x[6:10]))
 df['sex'] = df['card_id'].map(lambda x: int(x[-2]) % 2)
 
-# In[23]:
-
+feature_kdeplot(df, 'zmf_score' )
+plt.hist(df['channel'])
 
 features_cat = ['check_result', 'result', 'pay_num', 'channel', 'goods_type', 'lease_term', 'type', 'order_type',
                 'source', 'phone_book', 'emergency_contact_phone', 'old_level', 'create_hour', 'sex', ]
@@ -397,8 +400,6 @@ for feature in features:
 
 print("保存的数据量: {}".format(df.shape))
 df.to_csv(os.path.join(PROJECT_ROOT_DIR, "datasets", "mibaodata_ml.csv"), index=False)
-
-# In[32]:
 
 
 # 查看各特征关联度
